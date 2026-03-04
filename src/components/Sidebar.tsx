@@ -1,21 +1,104 @@
+import { useEffect, useState } from 'react'
 
-const AGENTS = [
-  { name: 'witness', role: 'Monitor', status: 'watching' },
-  { name: 'refinery', role: 'Merge Queue', status: 'idle' },
-  { name: 'polecat-1', role: 'Worker', status: 'coding' },
-  { name: 'polecat-2', role: 'Worker', status: 'coding' },
-  { name: 'deacon', role: 'Advisor', status: 'idle' },
-  { name: 'manager', role: 'Coordinator', status: 'planning' },
-]
+interface AgentInfo {
+  name: string
+  role: string
+  status: 'online' | 'offline'
+  rig: string
+}
 
-const STATUS_COLORS: Record<string, string> = {
-  watching: '#53d8fb',
-  idle: '#555',
-  coding: '#0f9b58',
-  planning: '#e94560',
+const STATUS_COLORS = {
+  online: '#0f9b58',
+  offline: '#555',
+}
+
+function parseAgentsFromStatus(text: string): AgentInfo[] {
+  const agents: AgentInfo[] = []
+  const lines = text.split('\n')
+  let currentRig = ''
+
+  for (const line of lines) {
+    const rigMatch = line.match(/─── (\w+)\/ ─/)
+    if (rigMatch) {
+      currentRig = rigMatch[1]
+      continue
+    }
+
+    // Mayor/Deacon (top-level)
+    const topMatch = line.match(/(🎩|🐺)\s+(\w[\w-]*)\s+(●|○)/)
+    if (topMatch) {
+      agents.push({
+        name: topMatch[2],
+        role: topMatch[1] === '🎩' ? 'Mayor' : 'Deacon',
+        status: topMatch[3] === '●' ? 'online' : 'offline',
+        rig: 'hq',
+      })
+      continue
+    }
+
+    // Rig agents
+    const agentMatch = line.match(/(🦉|🏭)\s+(\w[\w-]*)\s+(●|○)/)
+    if (agentMatch) {
+      const roleMap: Record<string, string> = { '🦉': 'Witness', '🏭': 'Refinery' }
+      agents.push({
+        name: agentMatch[2],
+        role: roleMap[agentMatch[1]] || agentMatch[2],
+        status: agentMatch[3] === '●' ? 'online' : 'offline',
+        rig: currentRig,
+      })
+      continue
+    }
+
+    // Crew/polecat members
+    const crewMatch = line.match(/^\s{3,}(\w[\w-]*)\s+(●|○)\s+\[/)
+    if (crewMatch) {
+      agents.push({
+        name: crewMatch[1],
+        role: 'Worker',
+        status: crewMatch[2] === '●' ? 'online' : 'offline',
+        rig: currentRig,
+      })
+    }
+  }
+
+  return agents
 }
 
 export function Sidebar() {
+  const [agents, setAgents] = useState<AgentInfo[]>([])
+  const [doltStatus, setDoltStatus] = useState<'online' | 'offline'>('offline')
+  const [wsStatus, setWsStatus] = useState<'connected' | 'disconnected'>('disconnected')
+
+  useEffect(() => {
+    async function poll() {
+      try {
+        const res = await fetch('/api/status')
+        if (res.ok) {
+          const { data } = await res.json()
+          if (data) {
+            setAgents(parseAgentsFromStatus(data))
+            setDoltStatus(data.includes('dolt') ? 'online' : 'online')
+            setWsStatus('connected')
+          }
+        }
+      } catch {
+        setWsStatus('disconnected')
+      }
+    }
+
+    poll()
+    const interval = setInterval(poll, 5000)
+    return () => clearInterval(interval)
+  }, [])
+
+  // Group agents by rig
+  const byRig = new Map<string, AgentInfo[]>()
+  for (const a of agents) {
+    const list = byRig.get(a.rig) || []
+    list.push(a)
+    byRig.set(a.rig, list)
+  }
+
   return (
     <div
       style={{
@@ -31,31 +114,52 @@ export function Sidebar() {
       <div style={{ padding: '0 12px 8px', color: '#533483', fontWeight: 'bold', fontSize: 11, letterSpacing: 2 }}>
         AGENTS
       </div>
-      {AGENTS.map((a) => (
-        <div
-          key={a.name}
-          style={{
-            padding: '6px 12px',
-            borderBottom: '1px solid #16213e',
-            cursor: 'pointer',
-          }}
-        >
-          <div style={{ color: '#e94560', fontWeight: 'bold' }}>{a.name}</div>
-          <div style={{ color: '#666', fontSize: 10 }}>
-            {a.role}
-            <span style={{ float: 'right', color: STATUS_COLORS[a.status] || '#555' }}>
-              {a.status}
-            </span>
-          </div>
+
+      {agents.length === 0 ? (
+        <div style={{ padding: '4px 12px', color: '#555', fontSize: 10 }}>
+          Waiting for bridge...
         </div>
-      ))}
+      ) : (
+        Array.from(byRig.entries()).map(([rig, rigAgents]) => (
+          <div key={rig}>
+            <div style={{
+              padding: '6px 12px 2px',
+              color: '#16213e',
+              fontSize: 9,
+              letterSpacing: 1,
+              textTransform: 'uppercase',
+            }}>
+              {rig || 'hq'}
+            </div>
+            {rigAgents.map((a) => (
+              <div
+                key={`${rig}-${a.name}`}
+                style={{
+                  padding: '3px 12px',
+                  borderBottom: '1px solid #16213e',
+                  opacity: a.status === 'offline' ? 0.5 : 1,
+                }}
+              >
+                <div style={{ color: '#e94560', fontWeight: 'bold', fontSize: 11 }}>{a.name}</div>
+                <div style={{ color: '#666', fontSize: 10 }}>
+                  {a.role}
+                  <span style={{ float: 'right', color: STATUS_COLORS[a.status] }}>
+                    {a.status}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        ))
+      )}
+
       <div style={{ padding: '12px 12px 8px', color: '#533483', fontWeight: 'bold', fontSize: 11, letterSpacing: 2 }}>
         SYSTEMS
       </div>
       <div style={{ padding: '4px 12px', color: '#666', fontSize: 10 }}>
-        <div>Dolt DB: <span style={{ color: '#0f9b58' }}>online</span></div>
+        <div>Dolt DB: <span style={{ color: doltStatus === 'online' ? '#0f9b58' : '#e94560' }}>{doltStatus}</span></div>
         <div>Beads: <span style={{ color: '#0f9b58' }}>synced</span></div>
-        <div>WS: <span style={{ color: '#53d8fb' }}>connected</span></div>
+        <div>WS: <span style={{ color: wsStatus === 'connected' ? '#53d8fb' : '#e94560' }}>{wsStatus}</span></div>
       </div>
     </div>
   )

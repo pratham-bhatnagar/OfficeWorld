@@ -38,6 +38,7 @@ export class ArcadeScene extends Phaser.Scene {
   private pathIndices = new Map<string, number>()
   private grid: TileData[][] = []
   private moveTimer = 0
+  private pollTimer = 0
   private breakTimers = new Map<string, number>()
   private selectedAgent: string | null = null
 
@@ -81,6 +82,9 @@ export class ArcadeScene extends Phaser.Scene {
     this.events.on('agent-selected', (agentId: string | null) => {
       this.game.events.emit('agent-selected', agentId)
     })
+
+    // Start polling bridge for live agent status
+    this.pollBridge()
   }
 
   private createCharacter(agent: AgentState) {
@@ -124,11 +128,18 @@ export class ArcadeScene extends Phaser.Scene {
   update(_time: number, delta: number) {
     this.cameraController.update()
     this.moveTimer += delta
+    this.pollTimer += delta
 
     // Move agents along paths every 150ms
     if (this.moveTimer >= 150) {
       this.moveTimer = 0
       this.updateAgentMovement()
+    }
+
+    // Poll bridge every 3s
+    if (this.pollTimer >= 3000) {
+      this.pollTimer = 0
+      this.pollBridge()
     }
 
     // Check break timers
@@ -244,6 +255,105 @@ export class ArcadeScene extends Phaser.Scene {
           now + BREAK_TIMING.minWorkTime + Math.random() * (BREAK_TIMING.maxWorkTime - BREAK_TIMING.minWorkTime),
         )
       }
+    }
+  }
+
+  /** Poll bridge server for live agent status */
+  private async pollBridge() {
+    try {
+      const res = await fetch('/api/status')
+      if (!res.ok) return
+      const { data } = await res.json()
+      if (!data || typeof data !== 'string') return
+
+      // Parse gt status output to find agent statuses
+      // Format: "🎩 mayor        ● [claude]" or "   backend      ○ [claude]"
+      const lines = data.split('\n')
+      let currentRig = ''
+
+      for (const line of lines) {
+        // Detect rig header: "─── villa_ai_planogram/ ──"
+        const rigMatch = line.match(/─── (\w+)\/ ─/)
+        if (rigMatch) {
+          currentRig = rigMatch[1]
+          continue
+        }
+
+        // Detect agent: emoji + name + ● or ○
+        const agentMatch = line.match(/(?:🎩|🐺|🦉|🏭|👷|😺)\s+(\w[\w-]*)\s+(●|○)/)
+        if (agentMatch) {
+          const [, name, statusSymbol] = agentMatch
+          const isOnline = statusSymbol === '●'
+
+          // Find matching agent in our state
+          for (const [id, state] of this.agentStates) {
+            const matchesName = state.name.toLowerCase() === name.toLowerCase()
+            const matchesRig = currentRig
+              ? state.rig === currentRig ||
+                state.rig === 'planogram' && currentRig === 'villa_ai_planogram' ||
+                state.rig === 'alc_ai' && currentRig === 'villa_alc_ai' ||
+                state.rig === 'arcade' && currentRig === 'gt_arcade'
+              : state.role === 'mayor' && name === 'mayor' ||
+                state.role === 'deacon' && name === 'deacon'
+
+            if (matchesName && matchesRig) {
+              const newStatus = isOnline
+                ? (state.status === 'offline' ? 'working' : state.status)
+                : 'offline'
+
+              if (newStatus !== state.status && state.status !== 'walking') {
+                state.status = newStatus as AgentState['status']
+                const char = this.characters.get(id)
+                if (char) {
+                  char.updateStatus(state.status)
+                  if (state.status === 'offline') {
+                    char.container.setAlpha(0.4)
+                  } else {
+                    char.container.setAlpha(1)
+                  }
+                }
+              }
+              break
+            }
+          }
+        }
+
+        // Detect crew members: "   name      ● [claude]" or "   name      ○ [claude]"
+        const crewMatch = line.match(/^\s{3,}(\w[\w-]*)\s+(●|○)\s+\[/)
+        if (crewMatch) {
+          const [, name, statusSymbol] = crewMatch
+          const isOnline = statusSymbol === '●'
+
+          for (const [id, state] of this.agentStates) {
+            if (state.name.toLowerCase() === name.toLowerCase() &&
+              (currentRig === '' ||
+                state.rig === currentRig ||
+                state.rig === 'planogram' && currentRig === 'villa_ai_planogram' ||
+                state.rig === 'alc_ai' && currentRig === 'villa_alc_ai' ||
+                state.rig === 'arcade' && currentRig === 'gt_arcade')) {
+              const newStatus = isOnline
+                ? (state.status === 'offline' ? 'working' : state.status)
+                : 'offline'
+
+              if (newStatus !== state.status && state.status !== 'walking') {
+                state.status = newStatus as AgentState['status']
+                const char = this.characters.get(id)
+                if (char) {
+                  char.updateStatus(state.status)
+                  if (state.status === 'offline') {
+                    char.container.setAlpha(0.4)
+                  } else {
+                    char.container.setAlpha(1)
+                  }
+                }
+              }
+              break
+            }
+          }
+        }
+      }
+    } catch {
+      // Bridge not available — agents stay in their current state
     }
   }
 
