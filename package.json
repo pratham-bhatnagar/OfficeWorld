@@ -5,10 +5,11 @@
   "type": "module",
   "description": "Gas Town Arcade — Gather Town-style gamified pixel art dashboard for Gas Town",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --host 0.0.0.0 --port 3200",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "server": "tsx server/index.ts"
+    "server": "tsx server/index.ts",
+    "tunnel": "cloudflared tunnel --url http://localhost:3200"
   },
   "dependencies": {
     "phaser": "^3.80.1",
