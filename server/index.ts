@@ -62,6 +62,34 @@ async function cachedCommand(key: string, cmd: string): Promise<string> {
   return result
 }
 
+app.use(express.json())
+
+// --- Command execution endpoint (terminal) ---
+
+const ALLOWED_CMD_PREFIXES = ['gt ', 'bd ']
+
+app.post('/api/exec', async (req, res) => {
+  const { cmd } = req.body
+  if (!cmd || typeof cmd !== 'string') {
+    res.status(400).json({ ok: false, error: 'Missing cmd' })
+    return
+  }
+
+  const isAllowed = ALLOWED_CMD_PREFIXES.some((p) => cmd.startsWith(p))
+  if (!isAllowed) {
+    res.status(403).json({ ok: false, error: 'Only gt and bd commands are allowed' })
+    return
+  }
+
+  try {
+    const output = await runCommand(cmd + ' 2>&1')
+    res.json({ ok: true, output })
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Command failed'
+    res.json({ ok: true, output: '', error: message })
+  }
+})
+
 // --- REST endpoints ---
 
 app.get('/api/status', async (_req, res) => {
