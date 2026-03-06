@@ -28,8 +28,10 @@ export function SessionViewer({ visible, onClose, sessionName, title }: SessionV
   const [error, setError] = useState<string | null>(null)
   const [msgInput, setMsgInput] = useState('')
   const [sending, setSending] = useState(false)
+  const [isLive, setIsLive] = useState(false)
   const outputRef = useRef<HTMLPreElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const wsRef = useRef<WebSocket | null>(null)
 
   const [width, setWidth] = useState(520)
   const [height, setHeight] = useState(560)
@@ -37,46 +39,88 @@ export function SessionViewer({ visible, onClose, sessionName, title }: SessionV
   const dragging = useRef<{ startX: number; startY: number; startPosX: number; startPosY: number } | null>(null)
   const resizing = useRef<{ startX: number; startY: number; startW: number; startH: number } | null>(null)
 
+  // WebSocket connection for real-time terminal streaming
   useEffect(() => {
-    if (!visible || !sessionName) return
+    if (!visible || !sessionName) {
+      // Cleanup WebSocket when hidden
+      if (wsRef.current) {
+        wsRef.current.close()
+        wsRef.current = null
+      }
+      setIsLive(false)
+      return
+    }
 
     setError(null)
     setOutput('')
+    setIsLive(false)
 
-    async function poll() {
+    // Determine WebSocket URL
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+    const wsUrl = `${protocol}//${window.location.host}/ws`
+
+    const ws = new WebSocket(wsUrl)
+    wsRef.current = ws
+
+    ws.onopen = () => {
+      setIsLive(true)
+      setError(null)
+      // Subscribe to terminal session
+      ws.send(JSON.stringify({
+        type: 'terminal-subscribe',
+        session: sessionName
+      }))
+    }
+
+    ws.onmessage = (event) => {
       try {
-        const res = await fetch(`/api/sessions/${sessionName}/capture?lines=80`)
-        if (res.ok) {
-          const data = await res.json()
-          if (data.ok) {
-            setOutput(data.data || '')
-            setError(null)
-          } else {
-            setError(data.error || 'Session not available')
-          }
-        } else {
-          setError('Bridge server not reachable')
+        const msg = JSON.parse(event.data)
+        
+        if (msg.type === 'terminal-output' && msg.session === sessionName) {
+          setOutput(msg.data || '')
+          setError(null)
+        } else if (msg.type === 'terminal-error') {
+          setError(msg.error || 'Session error')
+          setIsLive(false)
+        } else if (msg.type === 'welcome') {
+          // Connected successfully
         }
       } catch {
-        setError('Bridge server not reachable')
+        // Non-JSON message, ignore
       }
     }
 
-    poll()
-    const interval = setInterval(poll, 2000)
-    return () => clearInterval(interval)
+    ws.onerror = () => {
+      setError('WebSocket connection failed')
+      setIsLive(false)
+    }
+
+    ws.onclose = () => {
+      setIsLive(false)
+    }
+
+    return () => {
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: 'terminal-unsubscribe' }))
+      }
+      ws.close()
+      wsRef.current = null
+    }
   }, [visible, sessionName])
 
+  // Auto-scroll to bottom
   useEffect(() => {
     if (outputRef.current) {
       outputRef.current.scrollTop = outputRef.current.scrollHeight
     }
   }, [output])
 
+  // Focus input when visible
   useEffect(() => {
     if (visible && inputRef.current) inputRef.current.focus()
   }, [visible])
 
+  // Send message to mayor (via REST API)
   const sendMessage = useCallback(async () => {
     const text = msgInput.trim()
     if (!text || sending) return
@@ -97,6 +141,17 @@ export function SessionViewer({ visible, onClose, sessionName, title }: SessionV
       setSending(false)
     }
   }, [msgInput, sending, sessionName])
+
+  // Send terminal input via WebSocket
+  const sendTerminalInput = useCallback((input: string) => {
+    if (wsRef.current?.readyState === WebSocket.OPEN && sessionName) {
+      wsRef.current.send(JSON.stringify({
+        type: 'terminal-input',
+        session: sessionName,
+        data: input
+      }))
+    }
+  }, [sessionName])
 
   const onDragStart = useCallback((e: React.MouseEvent) => {
     e.preventDefault()
@@ -216,11 +271,11 @@ export function SessionViewer({ visible, onClose, sessionName, title }: SessionV
           {displayTitle}
         </span>
         <span style={{
-          color: error ? THEME.red : THEME.green,
+          color: error ? THEME.red : isLive ? THEME.green : THEME.textMuted,
           fontSize: 9,
           letterSpacing: 1,
         }}>
-          {error ? 'OFFLINE' : 'LIVE'}
+          {error ? 'ERROR' : isLive ? 'LIVE' : 'CONNECTING'}
         </span>
         <span
           style={{ color: THEME.textMuted, cursor: 'pointer', fontSize: 14, padding: '0 4px' }}
