@@ -4,6 +4,11 @@ import { TILE_SIZE } from '../../constants'
 import { FRAME_W, FRAME_H } from './SpriteGenerator'
 import { registerAnimations, getAnimKey, directionToAnim, AnimationName } from './AnimationController'
 
+// Display scale — how much bigger sprites appear vs their raw pixel size
+const DISPLAY_SCALE = 2
+const DISPLAY_W = FRAME_W * DISPLAY_SCALE
+const DISPLAY_H = FRAME_H * DISPLAY_SCALE
+
 const STATUS_COLORS: Record<string, number> = {
   working: 0x00ff88,
   idle: 0x888888,
@@ -40,31 +45,31 @@ export class CharacterSprite {
     registerAnimations(scene, agentId, textureKey)
 
     this.sprite = scene.add.sprite(0, 0, textureKey, 0)
-    this.sprite.setDisplaySize(FRAME_W, FRAME_H)
+    this.sprite.setDisplaySize(DISPLAY_W, DISPLAY_H)
 
     // Name tag background
-    const nameWidth = Math.max(name.length * 4 + 6, 24)
-    this.statusBg = scene.add.rectangle(0, FRAME_H / 2 + 6, nameWidth, 9, 0x000000, 0.6)
+    const nameWidth = Math.max(name.length * 5 + 8, 36)
+    this.statusBg = scene.add.rectangle(0, DISPLAY_H / 2 + 8, nameWidth, 12, 0x000000, 0.7)
     this.statusBg.setStrokeStyle(0.5, 0x333333)
 
     // Name label
-    this.nameLabel = scene.add.text(0, FRAME_H / 2 + 3, name, {
-      fontSize: '6px',
+    this.nameLabel = scene.add.text(0, DISPLAY_H / 2 + 4, name, {
+      fontSize: '9px',
       color: '#ffffff',
       fontFamily: 'monospace',
       stroke: '#000000',
-      strokeThickness: 1,
+      strokeThickness: 1.5,
     })
     this.nameLabel.setOrigin(0.5, 0)
 
     // Status dot
-    this.statusDot = scene.add.circle(FRAME_W / 2 + 3, -FRAME_H / 2 - 1, 2.5, STATUS_COLORS.idle)
-    this.statusDot.setStrokeStyle(0.5, 0x000000)
+    this.statusDot = scene.add.circle(DISPLAY_W / 2 + 4, -DISPLAY_H / 2 - 2, 4, STATUS_COLORS.idle)
+    this.statusDot.setStrokeStyle(1, 0x000000)
 
     // Selection glow effect
-    this.selectionGlow = scene.add.rectangle(0, 0, FRAME_W + 6, FRAME_H + 6)
-    this.selectionGlow.setStrokeStyle(1.5, 0xffff00, 0.8)
-    this.selectionGlow.setFillStyle(0xffff00, 0.08)
+    this.selectionGlow = scene.add.rectangle(0, 0, DISPLAY_W + 10, DISPLAY_H + 10)
+    this.selectionGlow.setStrokeStyle(2, 0xffff00, 0.8)
+    this.selectionGlow.setFillStyle(0xffff00, 0.1)
     this.selectionGlow.setVisible(false)
 
     this.container = scene.add.container(
@@ -74,7 +79,8 @@ export class CharacterSprite {
     )
     this.container.setDepth(5)
 
-    this.container.setSize(FRAME_W + 4, FRAME_H + 4)
+    // Larger hit area for easier clicking
+    this.container.setSize(DISPLAY_W + 8, DISPLAY_H + 8)
     this.container.setInteractive()
 
     this.playAnim('idle')

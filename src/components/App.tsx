@@ -4,16 +4,19 @@ import { ArcadeScene } from '../game/ArcadeScene'
 import { StatusHUD } from './StatusHUD'
 import { Sidebar } from './Sidebar'
 import { TerminalPanel } from './TerminalPanel'
-import { MayorChat } from './MayorChat'
+import { SessionViewer, agentToSession } from './SessionViewer'
 import { RigSwivel } from './RigSwivel'
 import { CANVAS_WIDTH, CANVAS_HEIGHT, WORLD_WIDTH, WORLD_HEIGHT, TILE_SIZE } from '../constants'
+import { AgentState } from '../types'
 
 export function App() {
   const gameRef = useRef<HTMLDivElement>(null)
   const [game, setGame] = useState<Phaser.Game | null>(null)
   const [selectedAgent, setSelectedAgent] = useState<string | null>(null)
   const [terminalOpen, setTerminalOpen] = useState(false)
-  const [mayorChatOpen, setMayorChatOpen] = useState(false)
+  const [sessionViewerOpen, setSessionViewerOpen] = useState(false)
+  const [sessionName, setSessionName] = useState<string | null>(null)
+  const [sessionTitle, setSessionTitle] = useState<string>('')
   const [activeRig, setActiveRig] = useState('planogram')
   const [beadCount, setBeadCount] = useState(0)
   const [polecatCount, setPolecatCount] = useState(0)
@@ -30,12 +33,28 @@ export function App() {
       }
       if (e.key === 'm' || e.key === 'M') {
         e.preventDefault()
-        setMayorChatOpen((prev) => !prev)
+        openMayorSession()
+      }
+      if (e.key === 'Escape') {
+        setSessionViewerOpen(false)
       }
     }
     window.addEventListener('keydown', handleKey)
     return () => window.removeEventListener('keydown', handleKey)
   }, [])
+
+  function openMayorSession() {
+    setSessionName('hq-mayor')
+    setSessionTitle("Mayor's Session")
+    setSessionViewerOpen(true)
+  }
+
+  function openAgentSession(agentState: AgentState) {
+    const session = agentToSession(agentState.rig, agentState.role, agentState.name)
+    setSessionName(session)
+    setSessionTitle(`${agentState.rig}/${agentState.name}`)
+    setSessionViewerOpen(true)
+  }
 
   useEffect(() => {
     if (!gameRef.current || game) return
@@ -61,11 +80,10 @@ export function App() {
     const g = new Phaser.Game(config)
     setGame(g)
 
-    g.events.on('agent-selected', (agentId: string | null) => {
+    g.events.on('agent-selected', (agentId: string | null, agentState: AgentState | null) => {
       setSelectedAgent(agentId)
-      // Open mayor chat if mayor is clicked
-      if (agentId === 'mayor') {
-        setMayorChatOpen(true)
+      if (agentState) {
+        openAgentSession(agentState)
       }
     })
 
@@ -84,7 +102,6 @@ export function App() {
     const scene = game.scene.getScene('ArcadeScene') as ArcadeScene
     if (!scene) return
 
-    // Camera positions for each rig
     const positions: Record<string, { x: number; y: number }> = {
       planogram: { x: 15 * TILE_SIZE, y: 12 * TILE_SIZE },
       alc_ai: { x: 55 * TILE_SIZE, y: 12 * TILE_SIZE },
@@ -97,7 +114,7 @@ export function App() {
   }, [game])
 
   const closeTerminal = useCallback(() => setTerminalOpen(false), [])
-  const closeMayorChat = useCallback(() => setMayorChatOpen(false), [])
+  const closeSession = useCallback(() => setSessionViewerOpen(false), [])
 
   return (
     <div style={{
@@ -115,7 +132,7 @@ export function App() {
       />
       <RigSwivel activeRig={activeRig} onRigSelect={handleRigSelect} />
       <div style={{ flex: 1, display: 'flex', minHeight: 0 }}>
-        <Sidebar onMayorChat={() => setMayorChatOpen(true)} />
+        <Sidebar onMayorChat={openMayorSession} />
         <div
           ref={gameRef}
           style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: 0 }}
@@ -135,15 +152,20 @@ export function App() {
       }}>
         <span>Drag to pan</span>
         <span>Scroll to zoom</span>
-        <span>1-8: Jump to room</span>
-        <span>Click agent to follow</span>
+        <span>Click agent to view session</span>
         <span style={{ color: '#53d8fb' }}>~ Terminal</span>
-        <span style={{ color: '#d4af37' }}>M Mayor Chat</span>
+        <span style={{ color: '#d4af37' }}>M Mayor</span>
+        <span style={{ color: '#888' }}>Esc Close</span>
         <span style={{ flex: 1 }} />
         <span>World: {WORLD_WIDTH}x{WORLD_HEIGHT} ({TILE_SIZE}px tiles)</span>
       </div>
       <TerminalPanel visible={terminalOpen} onClose={closeTerminal} />
-      <MayorChat visible={mayorChatOpen} onClose={closeMayorChat} />
+      <SessionViewer
+        visible={sessionViewerOpen}
+        onClose={closeSession}
+        sessionName={sessionName}
+        title={sessionTitle}
+      />
     </div>
   )
 }

@@ -1,9 +1,11 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import { Terminal } from 'xterm'
 import { FitAddon } from 'xterm-addon-fit'
 import 'xterm/css/xterm.css'
 
 const ALLOWED_PREFIXES = ['gt ', 'bd ']
+const MIN_HEIGHT = 150
+const MAX_HEIGHT_RATIO = 0.8
 
 export function TerminalPanel({ visible, onClose }: { visible: boolean; onClose: () => void }) {
   const termRef = useRef<HTMLDivElement>(null)
@@ -11,11 +13,12 @@ export function TerminalPanel({ visible, onClose }: { visible: boolean; onClose:
   const fitAddon = useRef<FitAddon | null>(null)
   const inputRef = useRef('')
   const hasInitialized = useRef(false)
+  const [height, setHeight] = useState(Math.round(window.innerHeight * 0.45))
+  const resizing = useRef<{ startY: number; startHeight: number } | null>(null)
 
   // Initialize terminal only when first made visible
   useEffect(() => {
     if (!visible || !termRef.current || hasInitialized.current) {
-      // Just fit if already initialized and becoming visible again
       if (visible && fitAddon.current && hasInitialized.current) {
         setTimeout(() => fitAddon.current?.fit(), 50)
       }
@@ -32,32 +35,29 @@ export function TerminalPanel({ visible, onClose }: { visible: boolean; onClose:
         selectionBackground: '#533483',
       },
       fontFamily: "'Courier New', monospace",
-      fontSize: 12,
+      fontSize: 14,
       cursorBlink: true,
       cursorStyle: 'block',
-      scrollback: 1000,
+      scrollback: 2000,
     })
 
     const fit = new FitAddon()
     term.loadAddon(fit)
     term.open(termRef.current)
 
-    // Delay fit until container is actually visible
     setTimeout(() => fit.fit(), 100)
 
     termInstance.current = term
     fitAddon.current = fit
 
-    // Welcome message
-    term.writeln('\x1b[36m╔══════════════════════════════════════════╗\x1b[0m')
-    term.writeln('\x1b[36m║\x1b[0m  \x1b[1;33mGas Town Arcade Terminal\x1b[0m               \x1b[36m║\x1b[0m')
-    term.writeln('\x1b[36m║\x1b[0m  Type gt or bd commands                 \x1b[36m║\x1b[0m')
-    term.writeln('\x1b[36m║\x1b[0m  Press ~ to toggle panel                \x1b[36m║\x1b[0m')
-    term.writeln('\x1b[36m╚══════════════════════════════════════════╝\x1b[0m')
+    term.writeln('\x1b[36m╔══════════════════════════════════════════════════╗\x1b[0m')
+    term.writeln('\x1b[36m║\x1b[0m  \x1b[1;33mGas Town Arcade Terminal\x1b[0m                        \x1b[36m║\x1b[0m')
+    term.writeln('\x1b[36m║\x1b[0m  Type gt or bd commands                          \x1b[36m║\x1b[0m')
+    term.writeln('\x1b[36m║\x1b[0m  Press ~ to toggle  |  Drag top edge to resize   \x1b[36m║\x1b[0m')
+    term.writeln('\x1b[36m╚══════════════════════════════════════════════════╝\x1b[0m')
     term.writeln('')
     writePrompt(term)
 
-    // Handle keyboard input
     term.onKey(({ key, domEvent }) => {
       const printable = !domEvent.altKey && !domEvent.ctrlKey && !domEvent.metaKey
 
@@ -93,6 +93,33 @@ export function TerminalPanel({ visible, onClose }: { visible: boolean; onClose:
     return () => window.removeEventListener('resize', handleResize)
   }, [visible])
 
+  // Refit on height change
+  useEffect(() => {
+    if (visible && fitAddon.current) {
+      setTimeout(() => fitAddon.current?.fit(), 50)
+    }
+  }, [height, visible])
+
+  // Drag-to-resize from the top edge
+  const onResizeStart = useCallback((e: React.MouseEvent) => {
+    e.preventDefault()
+    resizing.current = { startY: e.clientY, startHeight: height }
+
+    function onMove(e: MouseEvent) {
+      if (!resizing.current) return
+      const delta = resizing.current.startY - e.clientY
+      const maxH = window.innerHeight * MAX_HEIGHT_RATIO
+      setHeight(Math.min(maxH, Math.max(MIN_HEIGHT, resizing.current.startHeight + delta)))
+    }
+    function onUp() {
+      resizing.current = null
+      window.removeEventListener('mousemove', onMove)
+      window.removeEventListener('mouseup', onUp)
+    }
+    window.addEventListener('mousemove', onMove)
+    window.addEventListener('mouseup', onUp)
+  }, [height])
+
   return (
     <div
       style={{
@@ -100,8 +127,8 @@ export function TerminalPanel({ visible, onClose }: { visible: boolean; onClose:
         bottom: 0,
         left: 0,
         right: 0,
-        height: visible ? '40vh' : 0,
-        transition: 'height 0.3s ease',
+        height: visible ? height : 0,
+        transition: resizing.current ? 'none' : 'height 0.3s ease',
         background: '#0a0a1a',
         borderTop: visible ? '2px solid #533483' : 'none',
         zIndex: 1000,
@@ -110,23 +137,34 @@ export function TerminalPanel({ visible, onClose }: { visible: boolean; onClose:
         overflow: 'hidden',
       }}
     >
+      {/* Resize drag handle */}
+      <div
+        onMouseDown={onResizeStart}
+        style={{
+          height: 6,
+          cursor: 'ns-resize',
+          background: 'transparent',
+          flexShrink: 0,
+        }}
+      />
       {/* Title bar */}
       <div
         style={{
-          height: 28,
+          height: 32,
           background: '#0f3460',
           display: 'flex',
           alignItems: 'center',
-          padding: '0 12px',
+          padding: '0 14px',
           fontFamily: "'Courier New', monospace",
-          fontSize: 11,
+          fontSize: 12,
           flexShrink: 0,
         }}
       >
         <span style={{ color: '#53d8fb', fontWeight: 'bold' }}>TERMINAL</span>
         <span style={{ flex: 1 }} />
+        <span style={{ color: '#555', fontSize: 10, marginRight: 12 }}>drag top edge to resize</span>
         <span
-          style={{ color: '#e94560', cursor: 'pointer', fontSize: 14 }}
+          style={{ color: '#e94560', cursor: 'pointer', fontSize: 16, fontWeight: 'bold' }}
           onClick={onClose}
         >
           x

@@ -51,25 +51,56 @@ export const ROOMS: RoomConfig[] = [
     ],
   },
   {
-    id: 'hallway',
-    name: 'Main Hallway',
+    id: 'mayor_office',
+    name: "Mayor's Office",
     x: 30,
     y: 0,
     width: 10,
-    height: 45,
+    height: 15,
+    type: 'department',
+    color: ROOM_COLORS.mayor_office,
+    furniture: [
+      // Large executive desk
+      { type: 'desk', x: 33, y: 5, width: 4, height: 2 },
+      { type: 'monitor', x: 34, y: 5, width: 1, height: 1 },
+      { type: 'monitor', x: 36, y: 5, width: 1, height: 1 },
+      // Decor — bookshelves, plants, fancy stuff
+      { type: 'bookshelf', x: 31, y: 1, width: 2, height: 2 },
+      { type: 'bookshelf', x: 37, y: 1, width: 2, height: 2 },
+      { type: 'plant', x: 31, y: 4, width: 1, height: 1 },
+      { type: 'plant', x: 38, y: 4, width: 1, height: 1 },
+      { type: 'filing_cabinet', x: 31, y: 10, width: 1, height: 2 },
+      { type: 'couch', x: 33, y: 11, width: 4, height: 2 },
+      { type: 'rug', x: 32, y: 6, width: 6, height: 4 },
+    ],
+    deskPositions: [{ x: 35, y: 7 }],
+    decorations: [
+      { type: 'sign', x: 34, y: 0, label: 'MAYOR' },
+      { type: 'window', x: 32, y: 0 },
+      { type: 'window', x: 37, y: 0 },
+      { type: 'painting', x: 35, y: 0 },
+    ],
+  },
+  {
+    id: 'hallway',
+    name: 'Main Hallway',
+    x: 30,
+    y: 15,
+    width: 10,
+    height: 30,
     type: 'hallway',
     color: ROOM_COLORS.hallway,
     furniture: [
-      { type: 'plant', x: 32, y: 3, width: 1, height: 1 },
-      { type: 'plant', x: 37, y: 3, width: 1, height: 1 },
-      { type: 'water_cooler', x: 32, y: 15, width: 1, height: 1 },
-      { type: 'plant', x: 37, y: 22, width: 1, height: 1 },
-      { type: 'trash_can', x: 32, y: 30, width: 1, height: 1 },
+      { type: 'plant', x: 32, y: 18, width: 1, height: 1 },
+      { type: 'plant', x: 37, y: 18, width: 1, height: 1 },
+      { type: 'water_cooler', x: 32, y: 25, width: 1, height: 1 },
+      { type: 'plant', x: 37, y: 30, width: 1, height: 1 },
+      { type: 'trash_can', x: 32, y: 35, width: 1, height: 1 },
     ],
     deskPositions: [],
     decorations: [
-      { type: 'sign', x: 34, y: 0, label: 'HALL' },
-      { type: 'clock', x: 36, y: 0 },
+      { type: 'sign', x: 34, y: 15, label: 'HALL' },
+      { type: 'clock', x: 36, y: 15 },
     ],
   },
   {
@@ -299,10 +330,12 @@ export const ROOMS: RoomConfig[] = [
 /** Get doorway positions connecting rooms */
 export function getDoorways(): { x: number; y: number; roomA: string; roomB: string }[] {
   return [
-    // Planogram <-> Hallway
-    { x: 30, y: 12, roomA: 'planogram', roomB: 'hallway' },
+    // Mayor's office <-> Hallway
+    { x: 35, y: 15, roomA: 'mayor_office', roomB: 'hallway' },
+    // Planogram <-> Hallway (through the side)
+    { x: 30, y: 20, roomA: 'planogram', roomB: 'hallway' },
     // Hallway <-> ALC AI
-    { x: 40, y: 12, roomA: 'hallway', roomB: 'alc_ai' },
+    { x: 40, y: 20, roomA: 'hallway', roomB: 'alc_ai' },
     // ALC AI <-> Arcade Dept
     { x: 70, y: 12, roomA: 'alc_ai', roomB: 'arcade_dept' },
     // Hallway -> Break Room

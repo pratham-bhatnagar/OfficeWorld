@@ -27,8 +27,8 @@ const DEFAULT_AGENTS: AgentState[] = [
   { id: 'arc-witness', name: 'witness', role: 'witness', rig: 'arcade', status: 'working', position: { x: 75, y: 7 }, currentRoom: 'arcade_dept' },
   { id: 'arc-game', name: 'game', role: 'worker', rig: 'arcade', status: 'working', position: { x: 75, y: 12 }, currentRoom: 'arcade_dept' },
   // Special agents
-  { id: 'mayor', name: 'MAYOR', role: 'mayor', rig: 'mayor', status: 'working', position: { x: 35, y: 5 }, currentRoom: 'hallway' },
-  { id: 'deacon', name: 'deacon', role: 'deacon', rig: 'deacon', status: 'idle', position: { x: 35, y: 10 }, currentRoom: 'hallway' },
+  { id: 'mayor', name: 'MAYOR', role: 'mayor', rig: 'mayor', status: 'working', position: { x: 35, y: 7 }, currentRoom: 'mayor_office' },
+  { id: 'deacon', name: 'deacon', role: 'deacon', rig: 'deacon', status: 'idle', position: { x: 35, y: 20 }, currentRoom: 'hallway' },
 ]
 
 export class ArcadeScene extends Phaser.Scene {
@@ -80,10 +80,6 @@ export class ArcadeScene extends Phaser.Scene {
       }
     })
 
-    this.events.on('agent-selected', (agentId: string | null) => {
-      this.game.events.emit('agent-selected', agentId)
-    })
-
     this.pollBridge()
   }
 
@@ -112,6 +108,7 @@ export class ArcadeScene extends Phaser.Scene {
       this.selectedAgent = null
       this.cameraController.followTarget(null)
       this.events.emit('agent-selected', null)
+      this.game.events.emit('agent-selected', null)
     } else {
       this.selectedAgent = id
       const char = this.characters.get(id)
@@ -119,7 +116,9 @@ export class ArcadeScene extends Phaser.Scene {
       if (char) {
         this.cameraController.followTarget(char.getPosition())
       }
+      const state = this.agentStates.get(id)
       this.events.emit('agent-selected', id)
+      this.game.events.emit('agent-selected', id, state ?? null)
     }
   }
 

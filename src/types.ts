@@ -19,7 +19,7 @@ export interface RoomConfig {
   y: number
   width: number
   height: number
-  type: 'department' | 'hallway' | 'breakroom' | 'smoke_area' | 'bathroom' | 'play_area' | 'meeting_room'
+  type: 'department' | 'hallway' | 'breakroom' | 'smoke_area' | 'bathroom' | 'play_area' | 'meeting_room' | 'mayor_office'
   color: number
   furniture: FurnitureItem[]
   deskPositions: { x: number; y: number }[]
