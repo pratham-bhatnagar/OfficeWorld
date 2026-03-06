@@ -2,11 +2,10 @@ import { useRef, useEffect, useState, useCallback } from 'react'
 import Phaser from 'phaser'
 import { ArcadeScene } from '../game/ArcadeScene'
 import { StatusHUD } from './StatusHUD'
-import { Sidebar } from './Sidebar'
+import { BottomPanels } from './BottomPanels'
 import { TerminalPanel } from './TerminalPanel'
 import { SessionViewer, agentToSession } from './SessionViewer'
-import { RigSwivel } from './RigSwivel'
-import { CANVAS_WIDTH, CANVAS_HEIGHT, WORLD_WIDTH, WORLD_HEIGHT, TILE_SIZE } from '../constants'
+import { CANVAS_WIDTH, CANVAS_HEIGHT, TILE_SIZE, THEME } from '../constants'
 import { AgentState } from '../types'
 
 export function App() {
@@ -49,7 +48,7 @@ export function App() {
     setSessionViewerOpen(true)
   }
 
-  function openAgentSession(agentState: AgentState) {
+  function openAgentSession(agentState: AgentState | { rig: string; role: string; name: string }) {
     const session = agentToSession(agentState.rig, agentState.role, agentState.name)
     setSessionName(session)
     setSessionTitle(`${agentState.rig}/${agentState.name}`)
@@ -65,7 +64,7 @@ export function App() {
       width: CANVAS_WIDTH,
       height: CANVAS_HEIGHT,
       pixelArt: true,
-      backgroundColor: '#0a0a1a',
+      backgroundColor: THEME.bgCanvas,
       scene: [ArcadeScene],
       scale: {
         mode: Phaser.Scale.FIT,
@@ -95,7 +94,6 @@ export function App() {
     }
   }, [])
 
-  // Jump camera to rig when swivel changes
   const handleRigSelect = useCallback((rigId: string) => {
     setActiveRig(rigId)
     if (!game) return
@@ -115,6 +113,7 @@ export function App() {
 
   const closeTerminal = useCallback(() => setTerminalOpen(false), [])
   const closeSession = useCallback(() => setSessionViewerOpen(false), [])
+  const toggleTerminal = useCallback(() => setTerminalOpen((prev) => !prev), [])
 
   return (
     <div style={{
@@ -122,43 +121,52 @@ export function App() {
       height: '100vh',
       display: 'flex',
       flexDirection: 'column',
-      background: '#0a0a1a',
+      background: THEME.bgBody,
       overflow: 'hidden',
+      fontFamily: THEME.fontFamily,
     }}>
+      {/* Top status bar */}
       <StatusHUD
         selectedAgent={selectedAgent}
         beadCount={beadCount}
         polecatCount={polecatCount}
       />
-      <RigSwivel activeRig={activeRig} onRigSelect={handleRigSelect} />
-      <div style={{ flex: 1, display: 'flex', minHeight: 0 }}>
-        <Sidebar onMayorChat={openMayorSession} />
-        <div
-          ref={gameRef}
-          style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: 0 }}
-        />
-      </div>
+
+      {/* Game canvas area */}
       <div style={{
-        height: 24,
-        background: '#0f0f23',
-        borderTop: '1px solid #16213e',
+        flex: 1,
         display: 'flex',
         alignItems: 'center',
-        padding: '0 12px',
-        fontFamily: "'Courier New', monospace",
-        fontSize: 10,
-        color: '#555',
-        gap: 16,
+        justifyContent: 'center',
+        minHeight: 0,
+        padding: '4px 0',
       }}>
-        <span>Drag to pan</span>
-        <span>Scroll to zoom</span>
-        <span>Click agent to view session</span>
-        <span style={{ color: '#53d8fb' }}>~ Terminal</span>
-        <span style={{ color: '#d4af37' }}>M Mayor</span>
-        <span style={{ color: '#888' }}>Esc Close</span>
-        <span style={{ flex: 1 }} />
-        <span>World: {WORLD_WIDTH}x{WORLD_HEIGHT} ({TILE_SIZE}px tiles)</span>
+        <div
+          ref={gameRef}
+          style={{
+            maxWidth: 1280,
+            maxHeight: 720,
+            width: '100%',
+            height: '100%',
+            border: `4px solid ${THEME.borderAccent}`,
+            boxShadow: '0 0 24px rgba(100, 71, 125, 0.3)',
+          }}
+        />
       </div>
+
+      {/* Bottom 3-panel UI */}
+      <BottomPanels
+        activeRig={activeRig}
+        onRigSelect={handleRigSelect}
+        onMayorChat={openMayorSession}
+        onAgentClick={(agent) => openAgentSession(agent)}
+        onTerminalToggle={toggleTerminal}
+        selectedAgent={selectedAgent}
+        beadCount={beadCount}
+        polecatCount={polecatCount}
+      />
+
+      {/* Overlays */}
       <TerminalPanel visible={terminalOpen} onClose={closeTerminal} />
       <SessionViewer
         visible={sessionViewerOpen}

@@ -1,8 +1,42 @@
 export const TILE_SIZE = 16
 export const WORLD_WIDTH = 120
 export const WORLD_HEIGHT = 80
-export const CANVAS_WIDTH = 960
-export const CANVAS_HEIGHT = 640
+export const CANVAS_WIDTH = 1280
+export const CANVAS_HEIGHT = 720
+
+// Warm color palette (Star Office inspired)
+export const THEME = {
+  // Backgrounds
+  bgDark: '#0e1119',
+  bgPanel: '#141722',
+  bgBody: '#1a1a2e',
+  bgCanvas: '#12101e',
+  bgHeader: '#1a1533',
+
+  // Accents
+  gold: '#ffd700',
+  goldDim: '#b8960f',
+  green: '#22c55e',
+  greenDim: '#0f9b58',
+  red: '#e94560',
+  orange: '#ffaa00',
+  cyan: '#53d8fb',
+  purple: '#64477d',
+
+  // Text
+  textBright: '#fff',
+  textPrimary: '#e5e7eb',
+  textSecondary: '#9ca3af',
+  textMuted: '#555',
+
+  // Borders
+  borderDark: '#0e1119',
+  borderPanel: '#2a2040',
+  borderAccent: '#64477d',
+
+  // Font
+  fontFamily: "'ArkPixel', 'Courier New', monospace",
+} as const
 
 export const SKIN_TONES = [0xfce4c0, 0xf5d0a9, 0xe8b88a, 0xd4956b, 0xb07050, 0x8b5e3c, 0x6b4226, 0x5c3a1e]
 

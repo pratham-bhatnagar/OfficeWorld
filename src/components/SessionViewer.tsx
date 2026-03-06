@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
+import { THEME } from '../constants'
 
 const RIG_PREFIX: Record<string, string> = {
   planogram: 'vap',
@@ -30,14 +31,12 @@ export function SessionViewer({ visible, onClose, sessionName, title }: SessionV
   const outputRef = useRef<HTMLPreElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  // Drag-resize state
   const [width, setWidth] = useState(520)
   const [height, setHeight] = useState(560)
-  const [pos, setPos] = useState({ x: -1, y: -1 }) // -1 = default position
+  const [pos, setPos] = useState({ x: -1, y: -1 })
   const dragging = useRef<{ startX: number; startY: number; startPosX: number; startPosY: number } | null>(null)
   const resizing = useRef<{ startX: number; startY: number; startW: number; startH: number } | null>(null)
 
-  // Poll session output
   useEffect(() => {
     if (!visible || !sessionName) return
 
@@ -68,7 +67,6 @@ export function SessionViewer({ visible, onClose, sessionName, title }: SessionV
     return () => clearInterval(interval)
   }, [visible, sessionName])
 
-  // Auto-scroll to bottom
   useEffect(() => {
     if (outputRef.current) {
       outputRef.current.scrollTop = outputRef.current.scrollHeight
@@ -79,7 +77,6 @@ export function SessionViewer({ visible, onClose, sessionName, title }: SessionV
     if (visible && inputRef.current) inputRef.current.focus()
   }, [visible])
 
-  // Send message to mayor
   const sendMessage = useCallback(async () => {
     const text = msgInput.trim()
     if (!text || sending) return
@@ -101,7 +98,6 @@ export function SessionViewer({ visible, onClose, sessionName, title }: SessionV
     }
   }, [msgInput, sending, sessionName])
 
-  // Drag handlers
   const onDragStart = useCallback((e: React.MouseEvent) => {
     e.preventDefault()
     const rect = (e.target as HTMLElement).closest('[data-session-panel]')?.getBoundingClientRect()
@@ -129,7 +125,6 @@ export function SessionViewer({ visible, onClose, sessionName, title }: SessionV
     window.addEventListener('mouseup', onUp)
   }, [pos, width, height])
 
-  // Resize handlers
   const onResizeStart = useCallback((e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
@@ -170,13 +165,12 @@ export function SessionViewer({ visible, onClose, sessionName, title }: SessionV
         bottom,
         width,
         height,
-        background: '#0a0a1a',
-        border: '2px solid #533483',
-        borderRadius: 8,
+        background: THEME.bgDark,
+        border: `3px solid ${THEME.borderAccent}`,
         display: 'flex',
         flexDirection: 'column',
         zIndex: 1000,
-        fontFamily: "'Courier New', monospace",
+        fontFamily: THEME.fontFamily,
         overflow: 'hidden',
         boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
       }}
@@ -200,19 +194,18 @@ export function SessionViewer({ visible, onClose, sessionName, title }: SessionV
         onMouseDown={onDragStart}
         style={{
           padding: '8px 14px',
-          background: '#0f3460',
+          background: THEME.bgHeader,
           display: 'flex',
           alignItems: 'center',
           gap: 8,
-          borderBottom: '2px solid #533483',
+          borderBottom: `2px solid ${THEME.borderAccent}`,
           cursor: 'grab',
           userSelect: 'none',
           flexShrink: 0,
         }}
       >
-        <span style={{ fontSize: 14 }}>{isMayor ? '\u{1F3A9}' : '\u{1F4BB}'}</span>
         <span style={{
-          color: isMayor ? '#d4af37' : '#53d8fb',
+          color: isMayor ? THEME.gold : THEME.textPrimary,
           fontWeight: 'bold',
           fontSize: 12,
           flex: 1,
@@ -223,13 +216,14 @@ export function SessionViewer({ visible, onClose, sessionName, title }: SessionV
           {displayTitle}
         </span>
         <span style={{
-          color: error ? '#e94560' : '#0f9b58',
-          fontSize: 8,
+          color: error ? THEME.red : THEME.green,
+          fontSize: 9,
+          letterSpacing: 1,
         }}>
           {error ? 'OFFLINE' : 'LIVE'}
         </span>
         <span
-          style={{ color: '#888', cursor: 'pointer', fontSize: 14, padding: '0 4px' }}
+          style={{ color: THEME.textMuted, cursor: 'pointer', fontSize: 14, padding: '0 4px' }}
           onClick={onClose}
         >
           x
@@ -247,18 +241,18 @@ export function SessionViewer({ visible, onClose, sessionName, title }: SessionV
           overflowX: 'hidden',
           fontSize: 11,
           lineHeight: 1.4,
-          color: '#00ff88',
-          background: '#0a0a1a',
+          color: THEME.green,
+          background: THEME.bgDark,
           whiteSpace: 'pre-wrap',
           wordBreak: 'break-all',
         }}
       >
         {error ? (
-          <span style={{ color: '#e94560' }}>{error}</span>
+          <span style={{ color: THEME.red }}>{error}</span>
         ) : output ? (
           output
         ) : (
-          <span style={{ color: '#555' }}>Connecting to {sessionName}...</span>
+          <span style={{ color: THEME.textMuted }}>Connecting to {sessionName}...</span>
         )}
       </pre>
 
@@ -266,7 +260,7 @@ export function SessionViewer({ visible, onClose, sessionName, title }: SessionV
       {isMayor && (
         <div style={{
           padding: '8px 12px',
-          borderTop: '1px solid #2a2a4e',
+          borderTop: `1px solid ${THEME.borderPanel}`,
           display: 'flex',
           gap: 8,
           flexShrink: 0,
@@ -279,13 +273,12 @@ export function SessionViewer({ visible, onClose, sessionName, title }: SessionV
             placeholder="Send to Mayor (gt nudge)..."
             style={{
               flex: 1,
-              background: '#1a1a2e',
-              border: '1px solid #333',
-              borderRadius: 4,
-              color: '#ccc',
+              background: THEME.bgBody,
+              border: `1px solid ${THEME.borderPanel}`,
+              color: THEME.textPrimary,
               padding: '6px 10px',
               fontSize: 11,
-              fontFamily: 'monospace',
+              fontFamily: THEME.fontFamily,
               outline: 'none',
             }}
           />
@@ -293,14 +286,13 @@ export function SessionViewer({ visible, onClose, sessionName, title }: SessionV
             onClick={sendMessage}
             disabled={sending}
             style={{
-              background: '#533483',
-              color: '#fff',
+              background: THEME.borderAccent,
+              color: THEME.textBright,
               border: 'none',
-              borderRadius: 4,
               padding: '6px 12px',
               fontSize: 11,
               cursor: sending ? 'wait' : 'pointer',
-              fontFamily: 'monospace',
+              fontFamily: THEME.fontFamily,
               opacity: sending ? 0.5 : 1,
             }}
           >Send</button>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { THEME } from '../constants'
 
 interface StatusData {
   convoyProgress: string
@@ -94,44 +95,47 @@ export function StatusHUD({
     }
   }, [])
 
-  const wsColor = wsStatus === 'connected' ? '#0f9b58' : wsStatus === 'connecting' ? '#ffaa00' : '#e94560'
+  const wsColor = wsStatus === 'connected' ? THEME.green : wsStatus === 'connecting' ? THEME.orange : THEME.red
 
   return (
     <div
       style={{
-        height: 36,
-        background: '#0f3460',
-        color: '#e94560',
+        height: 40,
+        background: THEME.bgHeader,
+        color: THEME.textPrimary,
         display: 'flex',
         alignItems: 'center',
         padding: '0 16px',
-        fontFamily: "'Courier New', monospace",
+        fontFamily: THEME.fontFamily,
         fontSize: 12,
         letterSpacing: 1,
-        borderBottom: '2px solid #533483',
+        borderBottom: `3px solid ${THEME.borderAccent}`,
         gap: 16,
+        flexShrink: 0,
       }}
     >
-      <span style={{ color: '#53d8fb', fontWeight: 'bold', fontSize: 13 }}>GAS TOWN ARCADE</span>
-      <span style={{ color: '#222' }}>|</span>
+      <span style={{ color: THEME.gold, fontWeight: 'bold', fontSize: 14, letterSpacing: 2 }}>
+        GAS TOWN ARCADE
+      </span>
+      <span style={{ color: THEME.borderPanel }}>|</span>
       {selectedAgent && (
         <>
-          <span style={{ color: '#ffaa00' }}>Following: {selectedAgent}</span>
-          <span style={{ color: '#222' }}>|</span>
+          <span style={{ color: THEME.orange }}>Following: {selectedAgent}</span>
+          <span style={{ color: THEME.borderPanel }}>|</span>
         </>
       )}
-      <span title="Active polecats (real)">
-        Polecats: <span style={{ color: data.activePolecat > 0 ? '#0f9b58' : '#555' }}>{data.activePolecat}</span>
+      <span>
+        Polecats: <span style={{ color: data.activePolecat > 0 ? THEME.green : THEME.textMuted }}>{data.activePolecat}</span>
       </span>
-      <span title="Unread mail">
-        Mail: <span style={{ color: data.unreadMail > 0 ? '#ffaa00' : '#555' }}>{data.unreadMail}</span>
+      <span>
+        Mail: <span style={{ color: data.unreadMail > 0 ? THEME.orange : THEME.textMuted }}>{data.unreadMail}</span>
       </span>
-      <span style={{ color: '#222' }}>|</span>
-      <span title="Beads on floor (game)">
-        Beads: <span style={{ color: beadCount > 5 ? '#ff6644' : beadCount > 0 ? '#ffaa00' : '#555' }}>{beadCount}</span>
+      <span style={{ color: THEME.borderPanel }}>|</span>
+      <span>
+        Beads: <span style={{ color: beadCount > 5 ? THEME.red : beadCount > 0 ? THEME.orange : THEME.textMuted }}>{beadCount}</span>
       </span>
-      <span title="Cleaning polecats (game)">
-        Cleaners: <span style={{ color: polecatCount > 0 ? '#ffcc00' : '#555' }}>{polecatCount}</span>
+      <span>
+        Cleaners: <span style={{ color: polecatCount > 0 ? THEME.gold : THEME.textMuted }}>{polecatCount}</span>
       </span>
       <span style={{ flex: 1 }} />
       <span style={{ color: wsColor, fontSize: 10 }}>

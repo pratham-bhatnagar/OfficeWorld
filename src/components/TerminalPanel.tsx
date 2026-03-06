@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import { Terminal } from 'xterm'
 import { FitAddon } from 'xterm-addon-fit'
 import 'xterm/css/xterm.css'
+import { THEME } from '../constants'
 
 const ALLOWED_PREFIXES = ['gt ', 'bd ']
 const MIN_HEIGHT = 150
@@ -16,7 +17,6 @@ export function TerminalPanel({ visible, onClose }: { visible: boolean; onClose:
   const [height, setHeight] = useState(Math.round(window.innerHeight * 0.45))
   const resizing = useRef<{ startY: number; startHeight: number } | null>(null)
 
-  // Initialize terminal only when first made visible
   useEffect(() => {
     if (!visible || !termRef.current || hasInitialized.current) {
       if (visible && fitAddon.current && hasInitialized.current) {
@@ -29,12 +29,12 @@ export function TerminalPanel({ visible, onClose }: { visible: boolean; onClose:
 
     const term = new Terminal({
       theme: {
-        background: '#0a0a1a',
-        foreground: '#00ff88',
-        cursor: '#53d8fb',
-        selectionBackground: '#533483',
+        background: THEME.bgDark,
+        foreground: THEME.green,
+        cursor: THEME.gold,
+        selectionBackground: THEME.borderAccent,
       },
-      fontFamily: "'Courier New', monospace",
+      fontFamily: THEME.fontFamily,
       fontSize: 14,
       cursorBlink: true,
       cursorStyle: 'block',
@@ -50,11 +50,11 @@ export function TerminalPanel({ visible, onClose }: { visible: boolean; onClose:
     termInstance.current = term
     fitAddon.current = fit
 
-    term.writeln('\x1b[36m╔══════════════════════════════════════════════════╗\x1b[0m')
-    term.writeln('\x1b[36m║\x1b[0m  \x1b[1;33mGas Town Arcade Terminal\x1b[0m                        \x1b[36m║\x1b[0m')
-    term.writeln('\x1b[36m║\x1b[0m  Type gt or bd commands                          \x1b[36m║\x1b[0m')
-    term.writeln('\x1b[36m║\x1b[0m  Press ~ to toggle  |  Drag top edge to resize   \x1b[36m║\x1b[0m')
-    term.writeln('\x1b[36m╚══════════════════════════════════════════════════╝\x1b[0m')
+    term.writeln(`\x1b[33m${'='.repeat(50)}\x1b[0m`)
+    term.writeln(`\x1b[33m  Gas Town Arcade Terminal\x1b[0m`)
+    term.writeln(`\x1b[90m  Type gt or bd commands\x1b[0m`)
+    term.writeln(`\x1b[90m  Press ~ to toggle  |  Drag top edge to resize\x1b[0m`)
+    term.writeln(`\x1b[33m${'='.repeat(50)}\x1b[0m`)
     term.writeln('')
     writePrompt(term)
 
@@ -84,7 +84,6 @@ export function TerminalPanel({ visible, onClose }: { visible: boolean; onClose:
     })
   }, [visible])
 
-  // Resize handler
   useEffect(() => {
     function handleResize() {
       if (visible && fitAddon.current) fitAddon.current.fit()
@@ -93,14 +92,12 @@ export function TerminalPanel({ visible, onClose }: { visible: boolean; onClose:
     return () => window.removeEventListener('resize', handleResize)
   }, [visible])
 
-  // Refit on height change
   useEffect(() => {
     if (visible && fitAddon.current) {
       setTimeout(() => fitAddon.current?.fit(), 50)
     }
   }, [height, visible])
 
-  // Drag-to-resize from the top edge
   const onResizeStart = useCallback((e: React.MouseEvent) => {
     e.preventDefault()
     resizing.current = { startY: e.clientY, startHeight: height }
@@ -129,8 +126,8 @@ export function TerminalPanel({ visible, onClose }: { visible: boolean; onClose:
         right: 0,
         height: visible ? height : 0,
         transition: resizing.current ? 'none' : 'height 0.3s ease',
-        background: '#0a0a1a',
-        borderTop: visible ? '2px solid #533483' : 'none',
+        background: THEME.bgDark,
+        borderTop: visible ? `3px solid ${THEME.borderAccent}` : 'none',
         zIndex: 1000,
         display: 'flex',
         flexDirection: 'column',
@@ -151,20 +148,21 @@ export function TerminalPanel({ visible, onClose }: { visible: boolean; onClose:
       <div
         style={{
           height: 32,
-          background: '#0f3460',
+          background: THEME.bgHeader,
           display: 'flex',
           alignItems: 'center',
           padding: '0 14px',
-          fontFamily: "'Courier New', monospace",
+          fontFamily: THEME.fontFamily,
           fontSize: 12,
           flexShrink: 0,
+          borderBottom: `1px solid ${THEME.borderPanel}`,
         }}
       >
-        <span style={{ color: '#53d8fb', fontWeight: 'bold' }}>TERMINAL</span>
+        <span style={{ color: THEME.gold, fontWeight: 'bold', letterSpacing: 1 }}>TERMINAL</span>
         <span style={{ flex: 1 }} />
-        <span style={{ color: '#555', fontSize: 10, marginRight: 12 }}>drag top edge to resize</span>
+        <span style={{ color: THEME.textMuted, fontSize: 10, marginRight: 12 }}>drag top edge to resize</span>
         <span
-          style={{ color: '#e94560', cursor: 'pointer', fontSize: 16, fontWeight: 'bold' }}
+          style={{ color: THEME.red, cursor: 'pointer', fontSize: 16, fontWeight: 'bold' }}
           onClick={onClose}
         >
           x
@@ -177,7 +175,7 @@ export function TerminalPanel({ visible, onClose }: { visible: boolean; onClose:
 }
 
 function writePrompt(term: Terminal) {
-  term.write('\x1b[33mgt-arcade\x1b[0m \x1b[36m>\x1b[0m ')
+  term.write('\x1b[33mgt-arcade\x1b[0m \x1b[90m>\x1b[0m ')
 }
 
 async function executeCommand(term: Terminal, cmd: string) {
