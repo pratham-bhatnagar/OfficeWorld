@@ -12,9 +12,17 @@ function parseCount(text: string, pattern: RegExp): number {
   return match ? parseInt(match[1], 10) : 0
 }
 
-export function StatusHUD({ selectedAgent }: { selectedAgent: string | null }) {
+export function StatusHUD({
+  selectedAgent,
+  beadCount,
+  polecatCount,
+}: {
+  selectedAgent: string | null
+  beadCount: number
+  polecatCount: number
+}) {
   const [data, setData] = useState<StatusData>({
-    convoyProgress: '—',
+    convoyProgress: '--',
     unreadMail: 0,
     activePolecat: 0,
     beadReady: 0,
@@ -22,7 +30,6 @@ export function StatusHUD({ selectedAgent }: { selectedAgent: string | null }) {
   const [wsStatus, setWsStatus] = useState<'connecting' | 'connected' | 'disconnected'>('connecting')
 
   useEffect(() => {
-    // Fetch initial data from REST endpoints
     async function fetchStatus() {
       try {
         const [mailRes, polecatRes] = await Promise.all([
@@ -34,7 +41,7 @@ export function StatusHUD({ selectedAgent }: { selectedAgent: string | null }) {
           ...prev,
           unreadMail: mailRes?.data ? parseCount(mailRes.data, /(\d+) unread/) : prev.unreadMail,
           activePolecat: polecatRes?.data
-            ? (polecatRes.data.match(/●/g) || []).length
+            ? (polecatRes.data.match(/\u25CF/g) || []).length
             : prev.activePolecat,
         }))
       } catch {
@@ -48,7 +55,6 @@ export function StatusHUD({ selectedAgent }: { selectedAgent: string | null }) {
   }, [])
 
   useEffect(() => {
-    // Connect to WebSocket for live updates
     let ws: WebSocket | null = null
     let retryTimer: ReturnType<typeof setTimeout>
 
@@ -71,7 +77,7 @@ export function StatusHUD({ selectedAgent }: { selectedAgent: string | null }) {
             } else if (msg.type === 'gt-polecats') {
               setData((prev) => ({
                 ...prev,
-                activePolecat: (msg.data?.match(/●/g) || []).length,
+                activePolecat: (msg.data?.match(/\u25CF/g) || []).length,
               }))
             }
           } catch { /* ignore */ }
@@ -107,18 +113,25 @@ export function StatusHUD({ selectedAgent }: { selectedAgent: string | null }) {
       }}
     >
       <span style={{ color: '#53d8fb', fontWeight: 'bold', fontSize: 13 }}>GAS TOWN ARCADE</span>
-      <span style={{ color: '#333' }}>|</span>
+      <span style={{ color: '#222' }}>|</span>
       {selectedAgent && (
         <>
           <span style={{ color: '#ffaa00' }}>Following: {selectedAgent}</span>
-          <span style={{ color: '#333' }}>|</span>
+          <span style={{ color: '#222' }}>|</span>
         </>
       )}
-      <span title="Active polecats">
+      <span title="Active polecats (real)">
         Polecats: <span style={{ color: data.activePolecat > 0 ? '#0f9b58' : '#555' }}>{data.activePolecat}</span>
       </span>
       <span title="Unread mail">
         Mail: <span style={{ color: data.unreadMail > 0 ? '#ffaa00' : '#555' }}>{data.unreadMail}</span>
+      </span>
+      <span style={{ color: '#222' }}>|</span>
+      <span title="Beads on floor (game)">
+        Beads: <span style={{ color: beadCount > 5 ? '#ff6644' : beadCount > 0 ? '#ffaa00' : '#555' }}>{beadCount}</span>
+      </span>
+      <span title="Cleaning polecats (game)">
+        Cleaners: <span style={{ color: polecatCount > 0 ? '#ffcc00' : '#555' }}>{polecatCount}</span>
       </span>
       <span style={{ flex: 1 }} />
       <span style={{ color: wsColor, fontSize: 10 }}>

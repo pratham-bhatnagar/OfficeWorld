@@ -4,6 +4,8 @@ import { ArcadeScene } from '../game/ArcadeScene'
 import { StatusHUD } from './StatusHUD'
 import { Sidebar } from './Sidebar'
 import { TerminalPanel } from './TerminalPanel'
+import { MayorChat } from './MayorChat'
+import { RigSwivel } from './RigSwivel'
 import { CANVAS_WIDTH, CANVAS_HEIGHT, WORLD_WIDTH, WORLD_HEIGHT, TILE_SIZE } from '../constants'
 
 export function App() {
@@ -11,16 +13,24 @@ export function App() {
   const [game, setGame] = useState<Phaser.Game | null>(null)
   const [selectedAgent, setSelectedAgent] = useState<string | null>(null)
   const [terminalOpen, setTerminalOpen] = useState(false)
+  const [mayorChatOpen, setMayorChatOpen] = useState(false)
+  const [activeRig, setActiveRig] = useState('planogram')
+  const [beadCount, setBeadCount] = useState(0)
+  const [polecatCount, setPolecatCount] = useState(0)
 
-  // Toggle terminal with tilde key
+  // Keyboard shortcuts
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
+      const tag = (e.target as HTMLElement).tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return
+
       if (e.key === '`' || e.key === '~') {
-        // Don't toggle if typing in an input
-        const tag = (e.target as HTMLElement).tagName
-        if (tag === 'INPUT' || tag === 'TEXTAREA') return
         e.preventDefault()
         setTerminalOpen((prev) => !prev)
+      }
+      if (e.key === 'm' || e.key === 'M') {
+        e.preventDefault()
+        setMayorChatOpen((prev) => !prev)
       }
     }
     window.addEventListener('keydown', handleKey)
@@ -53,20 +63,59 @@ export function App() {
 
     g.events.on('agent-selected', (agentId: string | null) => {
       setSelectedAgent(agentId)
+      // Open mayor chat if mayor is clicked
+      if (agentId === 'mayor') {
+        setMayorChatOpen(true)
+      }
     })
+
+    g.events.on('bead-count', (count: number) => setBeadCount(count))
+    g.events.on('polecat-count', (count: number) => setPolecatCount(count))
 
     return () => {
       g.destroy(true)
     }
   }, [])
 
+  // Jump camera to rig when swivel changes
+  const handleRigSelect = useCallback((rigId: string) => {
+    setActiveRig(rigId)
+    if (!game) return
+    const scene = game.scene.getScene('ArcadeScene') as ArcadeScene
+    if (!scene) return
+
+    // Camera positions for each rig
+    const positions: Record<string, { x: number; y: number }> = {
+      planogram: { x: 15 * TILE_SIZE, y: 12 * TILE_SIZE },
+      alc_ai: { x: 55 * TILE_SIZE, y: 12 * TILE_SIZE },
+      arcade: { x: 82 * TILE_SIZE, y: 12 * TILE_SIZE },
+    }
+    const pos = positions[rigId]
+    if (pos) {
+      scene.cameras.main.pan(pos.x, pos.y, 500, 'Power2')
+    }
+  }, [game])
+
   const closeTerminal = useCallback(() => setTerminalOpen(false), [])
+  const closeMayorChat = useCallback(() => setMayorChatOpen(false), [])
 
   return (
-    <div style={{ width: '100vw', height: '100vh', display: 'flex', flexDirection: 'column', background: '#0a0a1a', overflow: 'hidden' }}>
-      <StatusHUD selectedAgent={selectedAgent} />
+    <div style={{
+      width: '100vw',
+      height: '100vh',
+      display: 'flex',
+      flexDirection: 'column',
+      background: '#0a0a1a',
+      overflow: 'hidden',
+    }}>
+      <StatusHUD
+        selectedAgent={selectedAgent}
+        beadCount={beadCount}
+        polecatCount={polecatCount}
+      />
+      <RigSwivel activeRig={activeRig} onRigSelect={handleRigSelect} />
       <div style={{ flex: 1, display: 'flex', minHeight: 0 }}>
-        <Sidebar />
+        <Sidebar onMayorChat={() => setMayorChatOpen(true)} />
         <div
           ref={gameRef}
           style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: 0 }}
@@ -89,10 +138,12 @@ export function App() {
         <span>1-8: Jump to room</span>
         <span>Click agent to follow</span>
         <span style={{ color: '#53d8fb' }}>~ Terminal</span>
+        <span style={{ color: '#d4af37' }}>M Mayor Chat</span>
         <span style={{ flex: 1 }} />
         <span>World: {WORLD_WIDTH}x{WORLD_HEIGHT} ({TILE_SIZE}px tiles)</span>
       </div>
       <TerminalPanel visible={terminalOpen} onClose={closeTerminal} />
+      <MayorChat visible={mayorChatOpen} onClose={closeMayorChat} />
     </div>
   )
 }

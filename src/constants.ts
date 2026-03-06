@@ -4,19 +4,39 @@ export const WORLD_HEIGHT = 80
 export const CANVAS_WIDTH = 960
 export const CANVAS_HEIGHT = 640
 
-export const SKIN_TONES = [0xffdbb4, 0xe8b88a, 0xd4956b, 0xb07050, 0x8b5e3c, 0x5c3a1e]
+export const SKIN_TONES = [0xfce4c0, 0xf5d0a9, 0xe8b88a, 0xd4956b, 0xb07050, 0x8b5e3c, 0x6b4226, 0x5c3a1e]
 
-export const HAIR_COLORS = [0x2c1810, 0x4a3728, 0x8b6f47, 0xd4a76a, 0xc41e3a, 0x1e90ff, 0x7b68ee, 0x2e8b57]
+export const HAIR_COLORS = [
+  0x2c1810, 0x4a3728, 0x8b6f47, 0xd4a76a, 0xf5deb3,
+  0xc41e3a, 0x1e6090, 0x6b4e8b, 0x2e8b57, 0x1a1a1a,
+]
+
+export const HAT_STYLES = ['none', 'cap', 'beanie', 'tophat', 'headband', 'bandana'] as const
+export const HAIR_STYLES = ['short', 'spiky', 'sidepart', 'bald', 'long', 'mohawk', 'ponytail', 'curly'] as const
+export const FACE_STYLES = ['default', 'glasses', 'beard', 'both', 'freckles', 'scar'] as const
 
 export const ROOM_COLORS: Record<string, number> = {
-  planogram: 0x1a3a5c,
-  alc_ai: 0x1a4a3a,
-  arcade: 0x3a1a5c,
-  hallway: 0x2a2a3e,
-  breakroom: 0x3a3a1e,
-  smoke_area: 0x2e2e2e,
-  bathroom: 0x1e3a3a,
-  play_area: 0x3a1a3a,
+  planogram: 0x2a4a6e,
+  alc_ai: 0x2a5a4a,
+  arcade: 0x4a2a6e,
+  hallway: 0x3a3a50,
+  breakroom: 0x5a5a2e,
+  smoke_area: 0x3e3e3e,
+  bathroom: 0x2e4a4a,
+  play_area: 0x4a2a4a,
+  meeting_room: 0x3a4a3a,
+}
+
+export const FLOOR_STYLES: Record<string, 'wood' | 'carpet' | 'tile' | 'concrete' | 'grass'> = {
+  planogram: 'carpet',
+  alc_ai: 'carpet',
+  arcade: 'carpet',
+  hallway: 'tile',
+  breakroom: 'tile',
+  smoke_area: 'concrete',
+  bathroom: 'tile',
+  play_area: 'wood',
+  meeting_room: 'carpet',
 }
 
 export const BREAK_TIMING = {
@@ -28,12 +48,17 @@ export const BREAK_TIMING = {
 }
 
 export const OUTFIT_COLORS: Record<string, number> = {
-  planogram: 0x2196f3,
+  planogram: 0x3a7bd5,
   alc_ai: 0x4caf50,
   arcade: 0x9c27b0,
-  mayor: 0x53d8fb,
+  mayor: 0xd4af37,
   deacon: 0xff9800,
   witness: 0xe91e63,
   refinery: 0xff5722,
   default: 0x607d8b,
 }
+
+export const BEAD_SPAWN_CHANCE = 0.003
+export const POLECAT_SPAWN_INTERVAL = 15000
+export const POLECAT_CLEAN_SPEED = 800
+export const POLECAT_FADE_DURATION = 1500

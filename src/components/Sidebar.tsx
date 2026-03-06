@@ -12,6 +12,14 @@ const STATUS_COLORS = {
   offline: '#555',
 }
 
+const ROLE_ICONS: Record<string, string> = {
+  Mayor: '&#x1F3A9;',
+  Deacon: '&#x1F43A;',
+  Witness: '&#x1F989;',
+  Refinery: '&#x1F3ED;',
+  Worker: '&#x1F477;',
+}
+
 function parseAgentsFromStatus(text: string): AgentInfo[] {
   const agents: AgentInfo[] = []
   const lines = text.split('\n')
@@ -24,7 +32,6 @@ function parseAgentsFromStatus(text: string): AgentInfo[] {
       continue
     }
 
-    // Mayor/Deacon (top-level)
     const topMatch = line.match(/(🎩|🐺)\s+(\w[\w-]*)\s+(●|○)/)
     if (topMatch) {
       agents.push({
@@ -36,7 +43,6 @@ function parseAgentsFromStatus(text: string): AgentInfo[] {
       continue
     }
 
-    // Rig agents
     const agentMatch = line.match(/(🦉|🏭)\s+(\w[\w-]*)\s+(●|○)/)
     if (agentMatch) {
       const roleMap: Record<string, string> = { '🦉': 'Witness', '🏭': 'Refinery' }
@@ -49,7 +55,6 @@ function parseAgentsFromStatus(text: string): AgentInfo[] {
       continue
     }
 
-    // Crew/polecat members
     const crewMatch = line.match(/^\s{3,}(\w[\w-]*)\s+(●|○)\s+\[/)
     if (crewMatch) {
       agents.push({
@@ -64,7 +69,7 @@ function parseAgentsFromStatus(text: string): AgentInfo[] {
   return agents
 }
 
-export function Sidebar() {
+export function Sidebar({ onMayorChat }: { onMayorChat: () => void }) {
   const [agents, setAgents] = useState<AgentInfo[]>([])
   const [doltStatus, setDoltStatus] = useState<'online' | 'offline'>('offline')
   const [wsStatus, setWsStatus] = useState<'connected' | 'disconnected'>('disconnected')
@@ -77,7 +82,7 @@ export function Sidebar() {
           const { data } = await res.json()
           if (data) {
             setAgents(parseAgentsFromStatus(data))
-            setDoltStatus(data.includes('dolt') ? 'online' : 'online')
+            setDoltStatus('online')
             setWsStatus('connected')
           }
         }
@@ -91,7 +96,6 @@ export function Sidebar() {
     return () => clearInterval(interval)
   }, [])
 
-  // Group agents by rig
   const byRig = new Map<string, AgentInfo[]>()
   for (const a of agents) {
     const list = byRig.get(a.rig) || []
@@ -109,57 +113,78 @@ export function Sidebar() {
         overflowY: 'auto',
         fontFamily: "'Courier New', monospace",
         fontSize: 12,
+        display: 'flex',
+        flexDirection: 'column',
       }}
     >
       <div style={{ padding: '0 12px 8px', color: '#533483', fontWeight: 'bold', fontSize: 11, letterSpacing: 2 }}>
         AGENTS
       </div>
 
-      {agents.length === 0 ? (
-        <div style={{ padding: '4px 12px', color: '#555', fontSize: 10 }}>
-          Waiting for bridge...
-        </div>
-      ) : (
-        Array.from(byRig.entries()).map(([rig, rigAgents]) => (
-          <div key={rig}>
-            <div style={{
-              padding: '6px 12px 2px',
-              color: '#16213e',
-              fontSize: 9,
-              letterSpacing: 1,
-              textTransform: 'uppercase',
-            }}>
-              {rig || 'hq'}
-            </div>
-            {rigAgents.map((a) => (
-              <div
-                key={`${rig}-${a.name}`}
-                style={{
-                  padding: '3px 12px',
-                  borderBottom: '1px solid #16213e',
-                  opacity: a.status === 'offline' ? 0.5 : 1,
-                }}
-              >
-                <div style={{ color: '#e94560', fontWeight: 'bold', fontSize: 11 }}>{a.name}</div>
-                <div style={{ color: '#666', fontSize: 10 }}>
-                  {a.role}
-                  <span style={{ float: 'right', color: STATUS_COLORS[a.status] }}>
-                    {a.status}
-                  </span>
-                </div>
-              </div>
-            ))}
+      <div style={{ flex: 1, overflowY: 'auto' }}>
+        {agents.length === 0 ? (
+          <div style={{ padding: '4px 12px', color: '#555', fontSize: 10 }}>
+            Waiting for bridge...
           </div>
-        ))
-      )}
-
-      <div style={{ padding: '12px 12px 8px', color: '#533483', fontWeight: 'bold', fontSize: 11, letterSpacing: 2 }}>
-        SYSTEMS
+        ) : (
+          Array.from(byRig.entries()).map(([rig, rigAgents]) => (
+            <div key={rig}>
+              <div style={{
+                padding: '6px 12px 2px',
+                color: '#2a3a5a',
+                fontSize: 9,
+                letterSpacing: 1,
+                textTransform: 'uppercase',
+              }}>
+                {rig || 'hq'}
+              </div>
+              {rigAgents.map((a) => (
+                <div
+                  key={`${rig}-${a.name}`}
+                  onClick={() => a.role === 'Mayor' && onMayorChat()}
+                  style={{
+                    padding: '4px 12px',
+                    borderBottom: '1px solid #16213e',
+                    opacity: a.status === 'offline' ? 0.5 : 1,
+                    cursor: a.role === 'Mayor' ? 'pointer' : 'default',
+                    transition: 'background 0.15s',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (a.role === 'Mayor') (e.target as HTMLElement).style.background = '#1a1a3e'
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.target as HTMLElement).style.background = 'transparent'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <span
+                      style={{ fontSize: 10 }}
+                      dangerouslySetInnerHTML={{ __html: ROLE_ICONS[a.role] || '&#x1F477;' }}
+                    />
+                    <span style={{ color: '#e94560', fontWeight: 'bold', fontSize: 11 }}>{a.name}</span>
+                  </div>
+                  <div style={{ color: '#555', fontSize: 10, paddingLeft: 16 }}>
+                    {a.role}
+                    <span style={{ float: 'right', color: STATUS_COLORS[a.status] }}>
+                      {a.status === 'online' ? '●' : '○'}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ))
+        )}
       </div>
-      <div style={{ padding: '4px 12px', color: '#666', fontSize: 10 }}>
-        <div>Dolt DB: <span style={{ color: doltStatus === 'online' ? '#0f9b58' : '#e94560' }}>{doltStatus}</span></div>
-        <div>Beads: <span style={{ color: '#0f9b58' }}>synced</span></div>
-        <div>WS: <span style={{ color: wsStatus === 'connected' ? '#53d8fb' : '#e94560' }}>{wsStatus}</span></div>
+
+      <div style={{ borderTop: '1px solid #16213e', padding: '8px 12px 0' }}>
+        <div style={{ color: '#533483', fontWeight: 'bold', fontSize: 10, letterSpacing: 2, marginBottom: 6 }}>
+          SYSTEMS
+        </div>
+        <div style={{ color: '#555', fontSize: 10, lineHeight: 1.6 }}>
+          <div>Dolt DB: <span style={{ color: doltStatus === 'online' ? '#0f9b58' : '#e94560' }}>{doltStatus}</span></div>
+          <div>Beads: <span style={{ color: '#0f9b58' }}>synced</span></div>
+          <div>WS: <span style={{ color: wsStatus === 'connected' ? '#53d8fb' : '#e94560' }}>{wsStatus}</span></div>
+        </div>
       </div>
     </div>
   )
