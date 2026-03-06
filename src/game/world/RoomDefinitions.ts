@@ -2,7 +2,7 @@ import { RoomConfig } from '../../types'
 import { ROOM_COLORS } from '../../constants'
 
 export const ROOMS: RoomConfig[] = [
-  // === Top row ===
+  // === Top row: Department offices ===
   {
     id: 'planogram',
     name: 'Planogram Dept',
@@ -13,6 +13,7 @@ export const ROOMS: RoomConfig[] = [
     type: 'department',
     color: ROOM_COLORS.planogram,
     furniture: [
+      // Desk clusters (3 pairs)
       { type: 'desk', x: 4, y: 5, width: 3, height: 2 },
       { type: 'monitor', x: 5, y: 5, width: 1, height: 1 },
       { type: 'desk', x: 4, y: 10, width: 3, height: 2 },
@@ -25,8 +26,14 @@ export const ROOMS: RoomConfig[] = [
       { type: 'monitor', x: 16, y: 10, width: 1, height: 1 },
       { type: 'desk', x: 15, y: 15, width: 3, height: 2 },
       { type: 'monitor', x: 16, y: 15, width: 1, height: 1 },
+      // Decor
       { type: 'plant', x: 2, y: 2, width: 1, height: 1 },
       { type: 'plant', x: 27, y: 2, width: 1, height: 1 },
+      { type: 'trash_can', x: 10, y: 8, width: 1, height: 1 },
+      { type: 'filing_cabinet', x: 22, y: 3, width: 1, height: 2 },
+      { type: 'bookshelf', x: 24, y: 3, width: 2, height: 2 },
+      { type: 'whiteboard', x: 10, y: 3, width: 4, height: 2 },
+      { type: 'rug', x: 8, y: 12, width: 6, height: 4 },
     ],
     deskPositions: [
       { x: 5, y: 7 },
@@ -36,23 +43,65 @@ export const ROOMS: RoomConfig[] = [
       { x: 16, y: 12 },
       { x: 16, y: 17 },
     ],
+    decorations: [
+      { type: 'clock', x: 14, y: 0 },
+      { type: 'window', x: 8, y: 0 },
+      { type: 'window', x: 20, y: 0 },
+      { type: 'poster', x: 26, y: 0 },
+    ],
+  },
+  {
+    id: 'mayor_office',
+    name: "Mayor's Office",
+    x: 30,
+    y: 0,
+    width: 10,
+    height: 15,
+    type: 'department',
+    color: ROOM_COLORS.mayor_office,
+    furniture: [
+      // Large executive desk
+      { type: 'desk', x: 33, y: 5, width: 4, height: 2 },
+      { type: 'monitor', x: 34, y: 5, width: 1, height: 1 },
+      { type: 'monitor', x: 36, y: 5, width: 1, height: 1 },
+      // Decor — bookshelves, plants, fancy stuff
+      { type: 'bookshelf', x: 31, y: 1, width: 2, height: 2 },
+      { type: 'bookshelf', x: 37, y: 1, width: 2, height: 2 },
+      { type: 'plant', x: 31, y: 4, width: 1, height: 1 },
+      { type: 'plant', x: 38, y: 4, width: 1, height: 1 },
+      { type: 'filing_cabinet', x: 31, y: 10, width: 1, height: 2 },
+      { type: 'couch', x: 33, y: 11, width: 4, height: 2 },
+      { type: 'rug', x: 32, y: 6, width: 6, height: 4 },
+    ],
+    deskPositions: [{ x: 35, y: 7 }],
+    decorations: [
+      { type: 'sign', x: 34, y: 0, label: 'MAYOR' },
+      { type: 'window', x: 32, y: 0 },
+      { type: 'window', x: 37, y: 0 },
+      { type: 'painting', x: 35, y: 0 },
+    ],
   },
   {
     id: 'hallway',
     name: 'Main Hallway',
     x: 30,
-    y: 0,
+    y: 15,
     width: 10,
-    height: 45,
+    height: 30,
     type: 'hallway',
     color: ROOM_COLORS.hallway,
     furniture: [
-      { type: 'plant', x: 32, y: 3, width: 1, height: 1 },
-      { type: 'plant', x: 37, y: 3, width: 1, height: 1 },
-      { type: 'plant', x: 32, y: 22, width: 1, height: 1 },
-      { type: 'plant', x: 37, y: 22, width: 1, height: 1 },
+      { type: 'plant', x: 32, y: 18, width: 1, height: 1 },
+      { type: 'plant', x: 37, y: 18, width: 1, height: 1 },
+      { type: 'water_cooler', x: 32, y: 25, width: 1, height: 1 },
+      { type: 'plant', x: 37, y: 30, width: 1, height: 1 },
+      { type: 'trash_can', x: 32, y: 35, width: 1, height: 1 },
     ],
     deskPositions: [],
+    decorations: [
+      { type: 'sign', x: 34, y: 15, label: 'HALL' },
+      { type: 'clock', x: 36, y: 15 },
+    ],
   },
   {
     id: 'alc_ai',
@@ -78,6 +127,10 @@ export const ROOMS: RoomConfig[] = [
       { type: 'monitor', x: 56, y: 15, width: 1, height: 1 },
       { type: 'plant', x: 42, y: 2, width: 1, height: 1 },
       { type: 'plant', x: 67, y: 2, width: 1, height: 1 },
+      { type: 'server_rack', x: 62, y: 3, width: 1, height: 3 },
+      { type: 'whiteboard', x: 50, y: 3, width: 4, height: 2 },
+      { type: 'trash_can', x: 50, y: 18, width: 1, height: 1 },
+      { type: 'filing_cabinet', x: 64, y: 3, width: 1, height: 2 },
     ],
     deskPositions: [
       { x: 45, y: 7 },
@@ -86,6 +139,12 @@ export const ROOMS: RoomConfig[] = [
       { x: 56, y: 7 },
       { x: 56, y: 12 },
       { x: 56, y: 17 },
+    ],
+    decorations: [
+      { type: 'window', x: 48, y: 0 },
+      { type: 'window', x: 60, y: 0 },
+      { type: 'clock', x: 54, y: 0 },
+      { type: 'poster', x: 66, y: 0 },
     ],
   },
   {
@@ -108,12 +167,21 @@ export const ROOMS: RoomConfig[] = [
       { type: 'monitor', x: 86, y: 10, width: 1, height: 1 },
       { type: 'plant', x: 72, y: 2, width: 1, height: 1 },
       { type: 'plant', x: 97, y: 2, width: 1, height: 1 },
+      { type: 'server_rack', x: 92, y: 3, width: 1, height: 3 },
+      { type: 'bookshelf', x: 94, y: 3, width: 2, height: 2 },
+      { type: 'whiteboard', x: 80, y: 3, width: 4, height: 2 },
+      { type: 'rug', x: 78, y: 12, width: 6, height: 4 },
     ],
     deskPositions: [
       { x: 75, y: 7 },
       { x: 75, y: 12 },
       { x: 86, y: 7 },
       { x: 86, y: 12 },
+    ],
+    decorations: [
+      { type: 'window', x: 78, y: 0 },
+      { type: 'window', x: 90, y: 0 },
+      { type: 'clock', x: 84, y: 0 },
     ],
   },
   // === Bottom row ===
@@ -122,104 +190,165 @@ export const ROOMS: RoomConfig[] = [
     name: 'Break Room',
     x: 0,
     y: 25,
-    width: 25,
+    width: 20,
     height: 20,
     type: 'breakroom',
     color: ROOM_COLORS.breakroom,
     furniture: [
-      { type: 'table', x: 6, y: 30, width: 3, height: 2 },
-      { type: 'chair', x: 5, y: 32, width: 1, height: 1 },
-      { type: 'chair', x: 7, y: 32, width: 1, height: 1 },
-      { type: 'chair', x: 9, y: 32, width: 1, height: 1 },
-      { type: 'table', x: 15, y: 30, width: 3, height: 2 },
-      { type: 'chair', x: 14, y: 32, width: 1, height: 1 },
-      { type: 'chair', x: 16, y: 32, width: 1, height: 1 },
-      { type: 'chair', x: 18, y: 32, width: 1, height: 1 },
+      { type: 'table', x: 5, y: 30, width: 3, height: 2 },
+      { type: 'chair', x: 4, y: 32, width: 1, height: 1 },
+      { type: 'chair', x: 6, y: 32, width: 1, height: 1 },
+      { type: 'chair', x: 8, y: 32, width: 1, height: 1 },
+      { type: 'table', x: 12, y: 30, width: 3, height: 2 },
+      { type: 'chair', x: 11, y: 32, width: 1, height: 1 },
+      { type: 'chair', x: 13, y: 32, width: 1, height: 1 },
+      { type: 'chair', x: 15, y: 32, width: 1, height: 1 },
       { type: 'vending_machine', x: 3, y: 27, width: 1, height: 2 },
-      { type: 'couch', x: 10, y: 38, width: 4, height: 2 },
+      { type: 'coffee_machine', x: 5, y: 27, width: 1, height: 1 },
+      { type: 'couch', x: 8, y: 38, width: 4, height: 2 },
+      { type: 'trash_can', x: 16, y: 27, width: 1, height: 1 },
     ],
     deskPositions: [],
+    decorations: [
+      { type: 'sign', x: 8, y: 25, label: 'BREAK' },
+      { type: 'poster', x: 2, y: 25 },
+      { type: 'clock', x: 10, y: 25 },
+    ],
+  },
+  {
+    id: 'meeting_room',
+    name: 'Meeting Room',
+    x: 20,
+    y: 25,
+    width: 18,
+    height: 20,
+    type: 'meeting_room',
+    color: ROOM_COLORS.meeting_room,
+    furniture: [
+      { type: 'meeting_table', x: 24, y: 31, width: 8, height: 4 },
+      { type: 'chair', x: 23, y: 32, width: 1, height: 1 },
+      { type: 'chair', x: 23, y: 34, width: 1, height: 1 },
+      { type: 'chair', x: 33, y: 32, width: 1, height: 1 },
+      { type: 'chair', x: 33, y: 34, width: 1, height: 1 },
+      { type: 'chair', x: 26, y: 36, width: 1, height: 1 },
+      { type: 'chair', x: 28, y: 36, width: 1, height: 1 },
+      { type: 'chair', x: 30, y: 36, width: 1, height: 1 },
+      { type: 'chair', x: 26, y: 30, width: 1, height: 1 },
+      { type: 'chair', x: 28, y: 30, width: 1, height: 1 },
+      { type: 'chair', x: 30, y: 30, width: 1, height: 1 },
+      { type: 'projector_screen', x: 24, y: 27, width: 8, height: 2 },
+      { type: 'plant', x: 22, y: 27, width: 1, height: 1 },
+      { type: 'plant', x: 35, y: 27, width: 1, height: 1 },
+      { type: 'whiteboard', x: 34, y: 27, width: 3, height: 2 },
+    ],
+    deskPositions: [],
+    decorations: [
+      { type: 'sign', x: 27, y: 25, label: 'MEET' },
+      { type: 'clock', x: 30, y: 25 },
+    ],
   },
   {
     id: 'smoke_area',
     name: 'Smoke Area',
-    x: 25,
+    x: 38,
     y: 25,
-    width: 20,
+    width: 16,
     height: 20,
     type: 'smoke_area',
     color: ROOM_COLORS.smoke_area,
     furniture: [
-      { type: 'ashtray', x: 30, y: 32, width: 1, height: 1 },
-      { type: 'chair', x: 29, y: 33, width: 1, height: 1 },
-      { type: 'chair', x: 31, y: 33, width: 1, height: 1 },
-      { type: 'ashtray', x: 37, y: 32, width: 1, height: 1 },
-      { type: 'chair', x: 36, y: 33, width: 1, height: 1 },
-      { type: 'chair', x: 38, y: 33, width: 1, height: 1 },
-      { type: 'plant', x: 27, y: 27, width: 1, height: 1 },
-      { type: 'plant', x: 42, y: 27, width: 1, height: 1 },
+      { type: 'ashtray', x: 42, y: 32, width: 1, height: 1 },
+      { type: 'chair', x: 41, y: 33, width: 1, height: 1 },
+      { type: 'chair', x: 43, y: 33, width: 1, height: 1 },
+      { type: 'ashtray', x: 48, y: 32, width: 1, height: 1 },
+      { type: 'chair', x: 47, y: 33, width: 1, height: 1 },
+      { type: 'chair', x: 49, y: 33, width: 1, height: 1 },
+      { type: 'trash_can', x: 40, y: 27, width: 1, height: 1 },
+      { type: 'plant', x: 51, y: 27, width: 1, height: 1 },
     ],
     deskPositions: [],
+    decorations: [
+      { type: 'sign', x: 44, y: 25, label: 'SMOKE' },
+    ],
   },
   {
     id: 'bathroom',
     name: 'Bathroom',
-    x: 45,
+    x: 54,
     y: 25,
-    width: 15,
+    width: 14,
     height: 20,
     type: 'bathroom',
     color: ROOM_COLORS.bathroom,
     furniture: [
-      { type: 'toilet', x: 48, y: 29, width: 1, height: 1 },
-      { type: 'toilet', x: 51, y: 29, width: 1, height: 1 },
-      { type: 'toilet', x: 54, y: 29, width: 1, height: 1 },
-      { type: 'toilet', x: 48, y: 35, width: 1, height: 1 },
-      { type: 'toilet', x: 51, y: 35, width: 1, height: 1 },
-      { type: 'toilet', x: 54, y: 35, width: 1, height: 1 },
+      { type: 'toilet', x: 57, y: 29, width: 1, height: 1 },
+      { type: 'toilet', x: 60, y: 29, width: 1, height: 1 },
+      { type: 'toilet', x: 63, y: 29, width: 1, height: 1 },
+      { type: 'toilet', x: 57, y: 35, width: 1, height: 1 },
+      { type: 'toilet', x: 60, y: 35, width: 1, height: 1 },
+      { type: 'toilet', x: 63, y: 35, width: 1, height: 1 },
+      { type: 'trash_can', x: 56, y: 27, width: 1, height: 1 },
     ],
     deskPositions: [],
+    decorations: [
+      { type: 'sign', x: 59, y: 25, label: 'WC' },
+    ],
   },
   {
     id: 'play_area',
     name: 'Play Area',
-    x: 60,
+    x: 68,
     y: 25,
-    width: 30,
+    width: 32,
     height: 20,
     type: 'play_area',
     color: ROOM_COLORS.play_area,
     furniture: [
-      { type: 'arcade_machine', x: 64, y: 28, width: 1, height: 2 },
-      { type: 'arcade_machine', x: 67, y: 28, width: 1, height: 2 },
-      { type: 'arcade_machine', x: 70, y: 28, width: 1, height: 2 },
-      { type: 'arcade_machine', x: 73, y: 28, width: 1, height: 2 },
-      { type: 'couch', x: 65, y: 37, width: 4, height: 2 },
-      { type: 'couch', x: 75, y: 37, width: 4, height: 2 },
-      { type: 'table', x: 80, y: 32, width: 3, height: 2 },
+      { type: 'arcade_machine', x: 72, y: 28, width: 1, height: 2 },
+      { type: 'arcade_machine', x: 75, y: 28, width: 1, height: 2 },
+      { type: 'arcade_machine', x: 78, y: 28, width: 1, height: 2 },
+      { type: 'arcade_machine', x: 81, y: 28, width: 1, height: 2 },
+      { type: 'ping_pong', x: 85, y: 30, width: 6, height: 4 },
+      { type: 'couch', x: 72, y: 38, width: 4, height: 2 },
+      { type: 'couch', x: 80, y: 38, width: 4, height: 2 },
+      { type: 'table', x: 90, y: 32, width: 3, height: 2 },
+      { type: 'chair', x: 89, y: 34, width: 1, height: 1 },
+      { type: 'chair', x: 93, y: 34, width: 1, height: 1 },
+      { type: 'plant', x: 70, y: 27, width: 1, height: 1 },
+      { type: 'plant', x: 97, y: 27, width: 1, height: 1 },
+      { type: 'vending_machine', x: 95, y: 28, width: 1, height: 2 },
     ],
     deskPositions: [],
+    decorations: [
+      { type: 'sign', x: 82, y: 25, label: 'PLAY' },
+      { type: 'poster', x: 70, y: 25 },
+      { type: 'poster', x: 96, y: 25 },
+    ],
   },
 ]
 
 /** Get doorway positions connecting rooms */
 export function getDoorways(): { x: number; y: number; roomA: string; roomB: string }[] {
   return [
-    // Planogram -> Hallway
-    { x: 30, y: 12, roomA: 'planogram', roomB: 'hallway' },
-    // Hallway -> ALC AI
-    { x: 40, y: 12, roomA: 'hallway', roomB: 'alc_ai' },
-    // ALC AI -> Arcade Dept
+    // Mayor's office <-> Hallway
+    { x: 35, y: 15, roomA: 'mayor_office', roomB: 'hallway' },
+    // Planogram <-> Hallway (through the side)
+    { x: 30, y: 20, roomA: 'planogram', roomB: 'hallway' },
+    // Hallway <-> ALC AI
+    { x: 40, y: 20, roomA: 'hallway', roomB: 'alc_ai' },
+    // ALC AI <-> Arcade Dept
     { x: 70, y: 12, roomA: 'alc_ai', roomB: 'arcade_dept' },
-    // Hallway -> Break Room (south)
-    { x: 20, y: 25, roomA: 'breakroom', roomB: 'hallway' },
-    // Hallway -> Smoke Area
-    { x: 34, y: 25, roomA: 'hallway', roomB: 'smoke_area' },
-    // Smoke Area -> Bathroom
-    { x: 45, y: 34, roomA: 'smoke_area', roomB: 'bathroom' },
-    // Bathroom -> Play Area
-    { x: 60, y: 34, roomA: 'bathroom', roomB: 'play_area' },
-    // Hallway to bottom row via main corridor
-    { x: 34, y: 25, roomA: 'hallway', roomB: 'breakroom' },
+    // Hallway -> Break Room
+    { x: 15, y: 25, roomA: 'breakroom', roomB: 'hallway' },
+    // Hallway -> Meeting Room
+    { x: 30, y: 35, roomA: 'hallway', roomB: 'meeting_room' },
+    // Meeting Room <-> Smoke Area
+    { x: 38, y: 35, roomA: 'meeting_room', roomB: 'smoke_area' },
+    // Smoke Area <-> Bathroom
+    { x: 54, y: 35, roomA: 'smoke_area', roomB: 'bathroom' },
+    // Bathroom <-> Play Area
+    { x: 68, y: 35, roomA: 'bathroom', roomB: 'play_area' },
+    // Breakroom <-> Meeting Room
+    { x: 20, y: 35, roomA: 'breakroom', roomB: 'meeting_room' },
   ]
 }

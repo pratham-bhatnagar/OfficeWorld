@@ -1,14 +1,15 @@
 import Phaser from 'phaser'
 import { AgentState, TileData } from '../types'
-import { BREAK_TIMING } from '../constants'
+import { BREAK_TIMING, POLECAT_SPAWN_INTERVAL } from '../constants'
 import { WorldBuilder } from './world/WorldBuilder'
 import { ROOMS } from './world/RoomDefinitions'
 import { CameraController } from './CameraController'
 import { CharacterSprite } from './sprites/CharacterSprite'
 import { generateSpritesheet, traitsFromName } from './sprites/SpriteGenerator'
 import { findPath } from './world/Pathfinding'
+import { BeadSystem } from './systems/BeadSystem'
+import { PolecatSystem } from './systems/PolecatSystem'
 
-/** Default agents — populated from real data when bridge is connected */
 const DEFAULT_AGENTS: AgentState[] = [
   // Planogram rig
   { id: 'vap-witness', name: 'witness', role: 'witness', rig: 'planogram', status: 'working', position: { x: 5, y: 7 }, currentRoom: 'planogram' },
@@ -26,8 +27,8 @@ const DEFAULT_AGENTS: AgentState[] = [
   { id: 'arc-witness', name: 'witness', role: 'witness', rig: 'arcade', status: 'working', position: { x: 75, y: 7 }, currentRoom: 'arcade_dept' },
   { id: 'arc-game', name: 'game', role: 'worker', rig: 'arcade', status: 'working', position: { x: 75, y: 12 }, currentRoom: 'arcade_dept' },
   // Special agents
-  { id: 'mayor', name: 'MAYOR', role: 'mayor', rig: 'mayor', status: 'working', position: { x: 35, y: 5 }, currentRoom: 'hallway' },
-  { id: 'deacon', name: 'deacon', role: 'deacon', rig: 'deacon', status: 'idle', position: { x: 35, y: 10 }, currentRoom: 'hallway' },
+  { id: 'mayor', name: 'MAYOR', role: 'mayor', rig: 'mayor', status: 'working', position: { x: 35, y: 7 }, currentRoom: 'mayor_office' },
+  { id: 'deacon', name: 'deacon', role: 'deacon', rig: 'deacon', status: 'idle', position: { x: 35, y: 20 }, currentRoom: 'hallway' },
 ]
 
 export class ArcadeScene extends Phaser.Scene {
@@ -39,37 +40,38 @@ export class ArcadeScene extends Phaser.Scene {
   private grid: TileData[][] = []
   private moveTimer = 0
   private pollTimer = 0
+  private polecatSpawnTimer = 0
   private breakTimers = new Map<string, number>()
   private selectedAgent: string | null = null
+  private beadSystem!: BeadSystem
+  private polecatSystem!: PolecatSystem
 
   constructor() {
     super({ key: 'ArcadeScene' })
   }
 
   create() {
-    // Build world
     const builder = new WorldBuilder(this)
     const { grid } = builder.buildWorld()
     this.grid = grid
 
-    // Camera
     this.cameraController = new CameraController(this)
 
-    // Create agent sprites
+    // Initialize systems
+    this.beadSystem = new BeadSystem(this)
+    this.polecatSystem = new PolecatSystem(this, grid, this.beadSystem)
+
     for (const agent of DEFAULT_AGENTS) {
       this.agentStates.set(agent.id, { ...agent })
       this.createCharacter(agent)
 
-      // Random initial break timer
       this.breakTimers.set(
         agent.id,
         Date.now() + BREAK_TIMING.minWorkTime + Math.random() * (BREAK_TIMING.maxWorkTime - BREAK_TIMING.minWorkTime),
       )
     }
 
-    // Click handler for agent selection
     this.input.on('gameobjectdown', (_pointer: Phaser.Input.Pointer, gameObject: Phaser.GameObjects.GameObject) => {
-      // Find which character was clicked
       for (const [id, char] of this.characters) {
         if (char.container === gameObject || char.container.list.includes(gameObject)) {
           this.selectAgent(id)
@@ -78,12 +80,6 @@ export class ArcadeScene extends Phaser.Scene {
       }
     })
 
-    // Emit event so React can listen for selection
-    this.events.on('agent-selected', (agentId: string | null) => {
-      this.game.events.emit('agent-selected', agentId)
-    })
-
-    // Start polling bridge for live agent status
     this.pollBridge()
   }
 
@@ -96,7 +92,6 @@ export class ArcadeScene extends Phaser.Scene {
     const char = new CharacterSprite(this, agent.id, displayName, textureKey, agent.position.x, agent.position.y)
     char.updateStatus(agent.status)
 
-    // Click handler on container
     char.container.on('pointerdown', () => {
       this.selectAgent(agent.id)
     })
@@ -105,7 +100,6 @@ export class ArcadeScene extends Phaser.Scene {
   }
 
   private selectAgent(id: string) {
-    // Deselect previous
     if (this.selectedAgent) {
       this.characters.get(this.selectedAgent)?.deselect()
     }
@@ -114,6 +108,7 @@ export class ArcadeScene extends Phaser.Scene {
       this.selectedAgent = null
       this.cameraController.followTarget(null)
       this.events.emit('agent-selected', null)
+      this.game.events.emit('agent-selected', null)
     } else {
       this.selectedAgent = id
       const char = this.characters.get(id)
@@ -121,7 +116,9 @@ export class ArcadeScene extends Phaser.Scene {
       if (char) {
         this.cameraController.followTarget(char.getPosition())
       }
+      const state = this.agentStates.get(id)
       this.events.emit('agent-selected', id)
+      this.game.events.emit('agent-selected', id, state ?? null)
     }
   }
 
@@ -129,29 +126,48 @@ export class ArcadeScene extends Phaser.Scene {
     this.cameraController.update()
     this.moveTimer += delta
     this.pollTimer += delta
+    this.polecatSpawnTimer += delta
 
-    // Move agents along paths every 150ms
     if (this.moveTimer >= 150) {
       this.moveTimer = 0
       this.updateAgentMovement()
     }
 
-    // Poll bridge every 3s
     if (this.pollTimer >= 3000) {
       this.pollTimer = 0
       this.pollBridge()
     }
 
-    // Check break timers
-    this.updateBreaks()
+    // Spawn polecats periodically to clean beads
+    if (this.polecatSpawnTimer >= POLECAT_SPAWN_INTERVAL) {
+      this.polecatSpawnTimer = 0
+      if (this.beadSystem.getBeadCount() > 3) {
+        this.polecatSystem.spawnPolecat()
+      }
+    }
 
-    // Update camera follow target position
+    this.updateBreaks()
+    this.beadSystem.update(delta)
+    this.polecatSystem.update(delta)
+
+    // Agents at work/smoking/eating may spawn beads
+    for (const [, state] of this.agentStates) {
+      if (state.status === 'working' || state.status === 'smoking' || state.status === 'eating') {
+        const roomId = this.grid[state.position.y]?.[state.position.x]?.roomId ?? ''
+        this.beadSystem.trySpawnBead(state.position.x, state.position.y, roomId, this.grid)
+      }
+    }
+
     if (this.selectedAgent) {
       const char = this.characters.get(this.selectedAgent)
       if (char) {
         this.cameraController.followTarget(char.getPosition())
       }
     }
+
+    // Emit bead count for UI
+    this.game.events.emit('bead-count', this.beadSystem.getBeadCount())
+    this.game.events.emit('polecat-count', this.polecatSystem.getActiveCount())
   }
 
   private updateAgentMovement() {
@@ -163,18 +179,18 @@ export class ArcadeScene extends Phaser.Scene {
 
       const idx = this.pathIndices.get(id) ?? 0
       if (idx >= path.length) {
-        // Arrived at destination
         this.paths.delete(id)
         this.pathIndices.delete(id)
         const char = this.characters.get(id)
         char?.setDirection(0, 0)
 
-        // If was walking, update status to destination activity
         if (state.targetPosition) {
           const targetRoom = this.grid[state.targetPosition.y]?.[state.targetPosition.x]?.roomId
           if (targetRoom === 'breakroom') state.status = 'eating'
           else if (targetRoom === 'smoke_area') state.status = 'smoking'
           else if (targetRoom === 'bathroom') state.status = 'bathroom'
+          else if (targetRoom === 'play_area') state.status = 'playing'
+          else if (targetRoom === 'meeting_room') state.status = 'meeting'
           else state.status = 'working'
           char?.updateStatus(state.status)
           state.targetPosition = undefined
@@ -204,16 +220,14 @@ export class ArcadeScene extends Phaser.Scene {
       const breakTime = this.breakTimers.get(id)
       if (!breakTime || now < breakTime) continue
 
-      // Time for a break — pick random destination
       if (state.status === 'working') {
-        const destinations = ['breakroom', 'smoke_area', 'bathroom']
+        const destinations = ['breakroom', 'smoke_area', 'bathroom', 'play_area', 'meeting_room']
         const destRoomId = destinations[Math.floor(Math.random() * destinations.length)]
         const room = ROOMS.find((r) => r.id === destRoomId)
         if (room) {
           const targetX = room.x + 3 + Math.floor(Math.random() * (room.width - 6))
           const targetY = room.y + 3 + Math.floor(Math.random() * (room.height - 6))
 
-          // Ensure target is walkable
           if (this.grid[targetY]?.[targetX]?.walkable) {
             const path = findPath(state.position, { x: targetX, y: targetY }, this.grid)
             if (path.length > 0) {
@@ -223,7 +237,6 @@ export class ArcadeScene extends Phaser.Scene {
               state.targetPosition = { x: targetX, y: targetY }
               this.characters.get(id)?.updateStatus('walking')
 
-              // Schedule return
               let breakDuration = BREAK_TIMING.breakDuration
               if (destRoomId === 'smoke_area') breakDuration = BREAK_TIMING.smokeDuration
               if (destRoomId === 'bathroom') breakDuration = BREAK_TIMING.bathroomDuration
@@ -231,11 +244,9 @@ export class ArcadeScene extends Phaser.Scene {
             }
           }
         }
-      } else if (state.status === 'eating' || state.status === 'smoking' || state.status === 'bathroom') {
-        // Break is over — return to desk
+      } else if (['eating', 'smoking', 'bathroom', 'playing', 'meeting'].includes(state.status)) {
         const deskRoom = ROOMS.find((r) => r.id === state.currentRoom)
         if (deskRoom && deskRoom.deskPositions.length > 0) {
-          // Find original desk position
           const agentIdx = DEFAULT_AGENTS.findIndex((a) => a.id === id)
           const deskPos = deskRoom.deskPositions[agentIdx % deskRoom.deskPositions.length]
           if (deskPos) {
@@ -249,7 +260,6 @@ export class ArcadeScene extends Phaser.Scene {
             }
           }
         }
-        // Schedule next break
         this.breakTimers.set(
           id,
           now + BREAK_TIMING.minWorkTime + Math.random() * (BREAK_TIMING.maxWorkTime - BREAK_TIMING.minWorkTime),
@@ -258,7 +268,6 @@ export class ArcadeScene extends Phaser.Scene {
     }
   }
 
-  /** Poll bridge server for live agent status */
   private async pollBridge() {
     try {
       const res = await fetch('/api/status')
@@ -266,98 +275,64 @@ export class ArcadeScene extends Phaser.Scene {
       const { data } = await res.json()
       if (!data || typeof data !== 'string') return
 
-      // Parse gt status output to find agent statuses
-      // Format: "🎩 mayor        ● [claude]" or "   backend      ○ [claude]"
       const lines = data.split('\n')
       let currentRig = ''
 
       for (const line of lines) {
-        // Detect rig header: "─── villa_ai_planogram/ ──"
         const rigMatch = line.match(/─── (\w+)\/ ─/)
         if (rigMatch) {
           currentRig = rigMatch[1]
           continue
         }
 
-        // Detect agent: emoji + name + ● or ○
         const agentMatch = line.match(/(?:🎩|🐺|🦉|🏭|👷|😺)\s+(\w[\w-]*)\s+(●|○)/)
         if (agentMatch) {
           const [, name, statusSymbol] = agentMatch
           const isOnline = statusSymbol === '●'
-
-          // Find matching agent in our state
-          for (const [id, state] of this.agentStates) {
-            const matchesName = state.name.toLowerCase() === name.toLowerCase()
-            const matchesRig = currentRig
-              ? state.rig === currentRig ||
-                state.rig === 'planogram' && currentRig === 'villa_ai_planogram' ||
-                state.rig === 'alc_ai' && currentRig === 'villa_alc_ai' ||
-                state.rig === 'arcade' && currentRig === 'gt_arcade'
-              : state.role === 'mayor' && name === 'mayor' ||
-                state.role === 'deacon' && name === 'deacon'
-
-            if (matchesName && matchesRig) {
-              const newStatus = isOnline
-                ? (state.status === 'offline' ? 'working' : state.status)
-                : 'offline'
-
-              if (newStatus !== state.status && state.status !== 'walking') {
-                state.status = newStatus as AgentState['status']
-                const char = this.characters.get(id)
-                if (char) {
-                  char.updateStatus(state.status)
-                  if (state.status === 'offline') {
-                    char.container.setAlpha(0.4)
-                  } else {
-                    char.container.setAlpha(1)
-                  }
-                }
-              }
-              break
-            }
-          }
+          this.updateAgentFromBridge(name, currentRig, isOnline)
         }
 
-        // Detect crew members: "   name      ● [claude]" or "   name      ○ [claude]"
         const crewMatch = line.match(/^\s{3,}(\w[\w-]*)\s+(●|○)\s+\[/)
         if (crewMatch) {
           const [, name, statusSymbol] = crewMatch
           const isOnline = statusSymbol === '●'
-
-          for (const [id, state] of this.agentStates) {
-            if (state.name.toLowerCase() === name.toLowerCase() &&
-              (currentRig === '' ||
-                state.rig === currentRig ||
-                state.rig === 'planogram' && currentRig === 'villa_ai_planogram' ||
-                state.rig === 'alc_ai' && currentRig === 'villa_alc_ai' ||
-                state.rig === 'arcade' && currentRig === 'gt_arcade')) {
-              const newStatus = isOnline
-                ? (state.status === 'offline' ? 'working' : state.status)
-                : 'offline'
-
-              if (newStatus !== state.status && state.status !== 'walking') {
-                state.status = newStatus as AgentState['status']
-                const char = this.characters.get(id)
-                if (char) {
-                  char.updateStatus(state.status)
-                  if (state.status === 'offline') {
-                    char.container.setAlpha(0.4)
-                  } else {
-                    char.container.setAlpha(1)
-                  }
-                }
-              }
-              break
-            }
-          }
+          this.updateAgentFromBridge(name, currentRig, isOnline)
         }
       }
     } catch {
-      // Bridge not available — agents stay in their current state
+      // Bridge not available
     }
   }
 
-  /** Get agent state for React components */
+  private updateAgentFromBridge(name: string, currentRig: string, isOnline: boolean) {
+    for (const [id, state] of this.agentStates) {
+      const matchesName = state.name.toLowerCase() === name.toLowerCase()
+      const matchesRig = currentRig
+        ? state.rig === currentRig ||
+          (state.rig === 'planogram' && currentRig === 'villa_ai_planogram') ||
+          (state.rig === 'alc_ai' && currentRig === 'villa_alc_ai') ||
+          (state.rig === 'arcade' && currentRig === 'gt_arcade')
+        : (state.role === 'mayor' && name === 'mayor') ||
+          (state.role === 'deacon' && name === 'deacon')
+
+      if (matchesName && matchesRig) {
+        const newStatus = isOnline
+          ? (state.status === 'offline' ? 'working' : state.status)
+          : 'offline'
+
+        if (newStatus !== state.status && state.status !== 'walking') {
+          state.status = newStatus as AgentState['status']
+          const char = this.characters.get(id)
+          if (char) {
+            char.updateStatus(state.status)
+            char.container.setAlpha(state.status === 'offline' ? 0.4 : 1)
+          }
+        }
+        break
+      }
+    }
+  }
+
   getAgentState(id: string): AgentState | undefined {
     return this.agentStates.get(id)
   }
