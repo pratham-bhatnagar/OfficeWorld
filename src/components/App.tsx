@@ -5,13 +5,16 @@ import { StatusHUD } from './StatusHUD'
 import { BottomPanels } from './BottomPanels'
 import { TerminalPanel } from './TerminalPanel'
 import { SessionViewer, agentToSession } from './SessionViewer'
+import { CharacterEditorPanel } from './CharacterEditorPanel'
 import { CANVAS_WIDTH, CANVAS_HEIGHT, TILE_SIZE, THEME } from '../constants'
-import { AgentState } from '../types'
+import { AgentState, AgentVisualTraits } from '../types'
+import { traitsFromName } from '../game/sprites/SpriteGenerator'
 
 export function App() {
   const gameRef = useRef<HTMLDivElement>(null)
   const [game, setGame] = useState<Phaser.Game | null>(null)
   const [selectedAgent, setSelectedAgent] = useState<string | null>(null)
+  const [selectedAgentState, setSelectedAgentState] = useState<AgentState | null>(null)
   const [terminalOpen, setTerminalOpen] = useState(false)
   const [sessionViewerOpen, setSessionViewerOpen] = useState(false)
   const [sessionName, setSessionName] = useState<string | null>(null)
@@ -19,6 +22,7 @@ export function App() {
   const [activeRig, setActiveRig] = useState('planogram')
   const [beadCount, setBeadCount] = useState(0)
   const [polecatCount, setPolecatCount] = useState(0)
+  const [characterEditorOpen, setCharacterEditorOpen] = useState(false)
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -34,8 +38,13 @@ export function App() {
         e.preventDefault()
         openMayorSession()
       }
+      if (e.key === 'e' || e.key === 'E') {
+        e.preventDefault()
+        setCharacterEditorOpen((prev) => !prev)
+      }
       if (e.key === 'Escape') {
         setSessionViewerOpen(false)
+        setCharacterEditorOpen(false)
       }
     }
     window.addEventListener('keydown', handleKey)
@@ -81,6 +90,7 @@ export function App() {
 
     g.events.on('agent-selected', (agentId: string | null, agentState: AgentState | null) => {
       setSelectedAgent(agentId)
+      setSelectedAgentState(agentState)
       if (agentState) {
         openAgentSession(agentState)
       }
@@ -113,6 +123,7 @@ export function App() {
 
   const closeTerminal = useCallback(() => setTerminalOpen(false), [])
   const closeSession = useCallback(() => setSessionViewerOpen(false), [])
+  const closeCharacterEditor = useCallback(() => setCharacterEditorOpen(false), [])
   const toggleTerminal = useCallback(() => setTerminalOpen((prev) => !prev), [])
 
   return (
@@ -174,6 +185,19 @@ export function App() {
         sessionName={sessionName}
         title={sessionTitle}
       />
+      {selectedAgentState && (
+        <CharacterEditorPanel
+          visible={characterEditorOpen}
+          onClose={closeCharacterEditor}
+          agentName={selectedAgentState.name}
+          currentTraits={traitsFromName(selectedAgentState.name, selectedAgentState.rig)}
+          onSave={(traits: AgentVisualTraits) => {
+            // Update agent appearance - would need to communicate with Phaser scene
+            console.log('Saving traits for', selectedAgentState.name, traits)
+            // TODO: Send traits update to ArcadeScene to regenerate sprite
+          }}
+        />
+      )}
     </div>
   )
 }
