@@ -92,20 +92,25 @@ export class TileRenderer {
 
   private drawRoomSign(name: string, x: number, y: number) {
     const ctx = this.ctx
-    // Sign background
-    const textWidth = name.length * 5 + 8
+    const textWidth = name.length * 5 + 12
     const signX = x - textWidth / 2
-    ctx.fillStyle = '#1a1a2e'
-    ctx.fillRect(signX, y, textWidth, 10)
-    ctx.fillStyle = '#2a2a4e'
-    ctx.fillRect(signX, y, textWidth, 1)
-    ctx.fillStyle = '#0a0a1e'
-    ctx.fillRect(signX, y + 9, textWidth, 1)
+    const signH = 12
+    // Plaque background (warm brown wood)
+    ctx.fillStyle = '#5d4037'
+    ctx.fillRect(signX, y, textWidth, signH)
+    // Inner bevel
+    ctx.fillStyle = '#795548'
+    ctx.fillRect(signX + 1, y + 1, textWidth - 2, signH - 2)
+    // Gold nameplate
+    ctx.fillStyle = '#c8a84e'
+    ctx.fillRect(signX + 2, y + 2, textWidth - 4, signH - 4)
+    ctx.fillStyle = '#b8983e'
+    ctx.fillRect(signX + 2, y + signH - 3, textWidth - 4, 1)
     // Text
-    ctx.fillStyle = '#88aacc'
-    ctx.font = '7px monospace'
+    ctx.fillStyle = '#3e2a18'
+    ctx.font = 'bold 7px monospace'
     ctx.textAlign = 'center'
-    ctx.fillText(name, x, y + 8)
+    ctx.fillText(name, x, y + 9)
     ctx.textAlign = 'start'
   }
 

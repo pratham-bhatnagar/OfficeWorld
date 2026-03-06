@@ -47,24 +47,24 @@ export class CharacterSprite {
     this.sprite = scene.add.sprite(0, 0, textureKey, 0)
     this.sprite.setDisplaySize(DISPLAY_W, DISPLAY_H)
 
-    // Name tag background
-    const nameWidth = Math.max(name.length * 5 + 8, 36)
-    this.statusBg = scene.add.rectangle(0, DISPLAY_H / 2 + 8, nameWidth, 12, 0x000000, 0.7)
-    this.statusBg.setStrokeStyle(0.5, 0x333333)
+    // Name tag background (warm plaque style)
+    const nameWidth = Math.max(name.length * 6 + 12, 40)
+    this.statusBg = scene.add.rectangle(0, DISPLAY_H / 2 + 10, nameWidth, 14, 0x1a1520, 0.85)
+    this.statusBg.setStrokeStyle(1, 0x64477d)
 
     // Name label
-    this.nameLabel = scene.add.text(0, DISPLAY_H / 2 + 4, name, {
-      fontSize: '9px',
-      color: '#ffffff',
-      fontFamily: 'monospace',
+    this.nameLabel = scene.add.text(0, DISPLAY_H / 2 + 5, name, {
+      fontSize: '10px',
+      color: '#ffd700',
+      fontFamily: "'ArkPixel', monospace",
       stroke: '#000000',
-      strokeThickness: 1.5,
+      strokeThickness: 2,
     })
     this.nameLabel.setOrigin(0.5, 0)
 
-    // Status dot
-    this.statusDot = scene.add.circle(DISPLAY_W / 2 + 4, -DISPLAY_H / 2 - 2, 4, STATUS_COLORS.idle)
-    this.statusDot.setStrokeStyle(1, 0x000000)
+    // Status dot (larger, with glow)
+    this.statusDot = scene.add.circle(DISPLAY_W / 2 + 6, -DISPLAY_H / 2 - 2, 5, STATUS_COLORS.idle)
+    this.statusDot.setStrokeStyle(1.5, 0x000000)
 
     // Selection glow effect
     this.selectionGlow = scene.add.rectangle(0, 0, DISPLAY_W + 10, DISPLAY_H + 10)

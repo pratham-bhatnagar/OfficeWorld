@@ -50,16 +50,16 @@ export const HAIR_STYLES = ['short', 'spiky', 'sidepart', 'bald', 'long', 'mohaw
 export const FACE_STYLES = ['default', 'glasses', 'beard', 'both', 'freckles', 'scar'] as const
 
 export const ROOM_COLORS: Record<string, number> = {
-  planogram: 0x2a4a6e,
-  alc_ai: 0x2a5a4a,
-  arcade: 0x4a2a6e,
-  mayor_office: 0x5a4a2e,
-  hallway: 0x3a3a50,
-  breakroom: 0x5a5a2e,
-  smoke_area: 0x3e3e3e,
-  bathroom: 0x2e4a4a,
-  play_area: 0x4a2a4a,
-  meeting_room: 0x3a4a3a,
+  planogram: 0xc4b090,    // warm beige office
+  alc_ai: 0x90b898,       // sage green office
+  arcade: 0xb0a0c0,       // warm lavender office
+  mayor_office: 0xa08060,  // rich wood/brown
+  hallway: 0x9a9080,      // warm gray
+  breakroom: 0xc8b880,    // warm cream
+  smoke_area: 0x808078,   // muted warm gray
+  bathroom: 0x90a8b0,     // light blue-gray tiles
+  play_area: 0xb89878,    // warm wood tone
+  meeting_room: 0x90a090, // professional sage
 }
 
 export const FLOOR_STYLES: Record<string, 'wood' | 'carpet' | 'tile' | 'concrete' | 'grass'> = {
