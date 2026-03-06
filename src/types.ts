@@ -12,6 +12,8 @@ export interface AgentState {
   task?: string
 }
 
+export type RoomType = 'mayor' | 'department' | 'breakroom' | 'meeting' | 'smoke' | 'bathroom' | 'play' | 'hallway'
+
 export interface RoomConfig {
   id: string
   name: string
@@ -19,11 +21,24 @@ export interface RoomConfig {
   y: number
   width: number
   height: number
-  type: 'department' | 'hallway' | 'breakroom' | 'smoke_area' | 'bathroom' | 'play_area' | 'meeting_room' | 'mayor_office'
+  type: RoomType | 'department' | 'hallway' | 'breakroom' | 'smoke_area' | 'bathroom' | 'play_area' | 'meeting_room' | 'mayor_office'
   color: number
   furniture: FurnitureItem[]
   deskPositions: { x: number; y: number }[]
   decorations?: DecorationItem[]
+  doors?: Array<{ x: number; y: number; direction: 'n' | 's' | 'e' | 'w' }>
+  rigId?: string
+  deskCount?: number
+}
+
+export interface TileMap {
+  tiles: number[][]
+  width: number
+  height: number
+}
+
+export interface Room extends RoomConfig {
+  doors: Array<{ x: number; y: number; direction: 'n' | 's' | 'e' | 'w' }>
 }
 
 export interface FurnitureItem {
