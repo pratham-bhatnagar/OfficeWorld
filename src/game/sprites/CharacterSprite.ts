@@ -4,10 +4,10 @@ import { TILE_SIZE } from '../../constants'
 import { FRAME_W, FRAME_H } from './SpriteGenerator'
 import { registerAnimations, getAnimKey, directionToAnim, AnimationName } from './AnimationController'
 
-// Display scale — how much bigger sprites appear vs their raw pixel size
+// Phase 1: 32x48 sprites with 12 animations
 const DISPLAY_SCALE = 2
-const DISPLAY_W = FRAME_W * DISPLAY_SCALE
-const DISPLAY_H = FRAME_H * DISPLAY_SCALE
+const DISPLAY_W = 32 * DISPLAY_SCALE  // 64
+const DISPLAY_H = 48 * DISPLAY_SCALE  // 96
 
 const STATUS_COLORS: Record<string, number> = {
   working: 0x00ff88,
@@ -19,6 +19,9 @@ const STATUS_COLORS: Record<string, number> = {
   playing: 0xff44ff,
   meeting: 0x44ffaa,
   offline: 0x333333,
+  oncall: 0xffff44,    // New: phone call
+  celebrating: 0xff88ff, // New: celebrating
+  waving: 0x88ffff,    // New: waving
 }
 
 export class CharacterSprite {
@@ -109,6 +112,12 @@ export class CharacterSprite {
       this.playAnim('smoke')
     } else if (status === 'playing') {
       this.playAnim('play')
+    } else if (status === 'oncall') {
+      this.playAnim('phone')
+    } else if (status === 'celebrating') {
+      this.playAnim('dance')
+    } else if (status === 'waving') {
+      this.playAnim('wave')
     } else if (status === 'idle' || status === 'offline' || status === 'meeting') {
       this.playAnim('idle')
     }

@@ -1,6 +1,7 @@
 import Phaser from 'phaser'
 import { SHEET_COLS } from './SpriteGenerator'
 
+// Phase 1: 12 animations total
 const ANIM_ROWS = {
   idle: 0,
   'walk-down': 1,
@@ -10,6 +11,10 @@ const ANIM_ROWS = {
   action: 5,
   smoke: 6,
   play: 7,
+  eat: 8,      // New: eating animation
+  phone: 9,    // New: on phone animation
+  wave: 10,    // New: waving animation
+  dance: 11,   // New: celebrating/dancing
 } as const
 
 export type AnimationName = keyof typeof ANIM_ROWS

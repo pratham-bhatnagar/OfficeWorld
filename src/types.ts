@@ -5,7 +5,7 @@ export interface AgentState {
   name: string
   role: string
   rig: string
-  status: 'working' | 'idle' | 'walking' | 'smoking' | 'eating' | 'bathroom' | 'playing' | 'meeting' | 'offline'
+  status: 'working' | 'idle' | 'walking' | 'smoking' | 'eating' | 'bathroom' | 'playing' | 'meeting' | 'offline' | 'oncall' | 'celebrating' | 'waving'
   position: { x: number; y: number }
   targetPosition?: { x: number; y: number }
   currentRoom: string
