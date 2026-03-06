@@ -1,7 +1,7 @@
 import express from 'express'
 import { WebSocketServer, WebSocket } from 'ws'
 import http from 'http'
-import { exec } from 'child_process'
+import { exec, execFile } from 'child_process'
 
 const app = express()
 const server = http.createServer(app)
@@ -481,11 +481,15 @@ wss.on('connection', (rawWs) => {
             ws.send(JSON.stringify({ type: 'error', error: 'Invalid session name' }))
             return
           }
-          // Use tmux send-keys to forward input
-          exec(
-            `tmux send-keys -t "${session}" "${input.replace(/"/g, '\\"')}" 2>/dev/null`,
-            { cwd: GT_ROOT, timeout: 3000 }
-          )
+          // Use execFile to avoid shell injection - pass input as literal
+          execFile('tmux', ['send-keys', '-t', session, '-l', input], {
+            cwd: GT_ROOT,
+            timeout: 3000
+          }, (error) => {
+            if (error) {
+              console.error('tmux send-keys error:', error)
+            }
+          })
           break
         }
 
