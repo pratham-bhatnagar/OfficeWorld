@@ -2,11 +2,10 @@ import Phaser from 'phaser'
 import { AgentVisualTraits } from '../../types'
 import { SKIN_TONES, HAIR_COLORS, OUTFIT_COLORS, HAT_STYLES, FACE_STYLES } from '../../constants'
 
-// Phase 1: Enhanced Character Sprites (32x48, 12 animations)
-const FRAME_W = 32
-const FRAME_H = 48
+const FRAME_W = 16
+const FRAME_H = 24
 const COLS = 4  // animation frames per row
-const ROWS = 12  // 12 animations total
+const ROWS = 8  // idle, walk-down, walk-up, walk-left, walk-right, action, smoke, play
 const SHEET_W = FRAME_W * COLS
 const SHEET_H = FRAME_H * ROWS
 
@@ -71,9 +70,6 @@ function drawFrame(
   col: number,
   traits: AgentVisualTraits,
 ) {
-  // Phase 1: Scale factor for 32x48 (2x the original 16x24)
-  const S = 2
-
   const skin = toCSS(traits.skinTone)
   const skinDark = toCSS(darken(traits.skinTone, 20))
   const skinLight = toCSS(lighten(traits.skinTone, 15))
@@ -86,180 +82,319 @@ function drawFrame(
   const isWalking = row >= 1 && row <= 4
   const isSmoking = row === 6
   const isPlaying = row === 7
-  const isEating = row === 8
-  const isPhone = row === 9
-  const isWave = row === 10
-  const isDance = row === 11
-
-  const bobY = isWalking ? (col % 2 === 0 ? 0 : -1 * S) : 0
-  const legOffset = isWalking ? (col % 2 === 0 ? 1 * S : -1 * S) : 0
-  const armSwing = isWalking ? (col % 2 === 0 ? 1 * S : -1 * S) : 0
+  const bobY = isWalking ? (col % 2 === 0 ? 0 : -1) : 0
+  const legOffset = isWalking ? (col % 2 === 0 ? 1 : -1) : 0
+  const armSwing = isWalking ? (col % 2 === 0 ? 1 : -1) : 0
   const facingBack = row === 2 // walk-up
 
-  // Drop shadow (scaled)
+  // Drop shadow
   ctx.fillStyle = 'rgba(0,0,0,0.2)'
-  ctx.fillRect(x + 8 * S, y + 21 * S + bobY, 16 * S, 4 * S)
+  ctx.fillRect(x + 4, y + 21, 8, 2)
   ctx.fillStyle = 'rgba(0,0,0,0.1)'
-  ctx.fillRect(x + 6 * S, y + 22 * S + bobY, 20 * S, 2 * S)
+  ctx.fillRect(x + 3, y + 22, 10, 1)
 
-  // === LEGS (scaled) ===
-  const legBase = y + 17 * S + bobY
+  // === LEGS ===
+  const legBase = y + 17 + bobY
   // Left leg
   ctx.fillStyle = '#2a2a4a'
-  ctx.fillRect(x + 5 * S, legBase, 4 * S, 8 * S + legOffset)
+  ctx.fillRect(x + 5, legBase, 2, 4 + legOffset)
   ctx.fillStyle = '#222240'
-  ctx.fillRect(x + 5 * S, legBase, 4 * S, 2 * S)
+  ctx.fillRect(x + 5, legBase, 2, 1) // waist shadow
   // Right leg
   ctx.fillStyle = '#2a2a4a'
-  ctx.fillRect(x + 9 * S, legBase, 4 * S, 8 * S - legOffset)
+  ctx.fillRect(x + 9, legBase, 2, 4 - legOffset)
   ctx.fillStyle = '#222240'
-  ctx.fillRect(x + 9 * S, legBase, 4 * S, 2 * S)
+  ctx.fillRect(x + 9, legBase, 2, 1)
 
-  // Shoes (scaled)
+  // Shoes
   ctx.fillStyle = '#1a1a2a'
-  ctx.fillRect(x + 4 * S, legBase + 8 * S + legOffset, 6 * S, 4 * S)
-  ctx.fillRect(x + 9 * S, legBase + 8 * S - legOffset, 6 * S, 4 * S)
+  ctx.fillRect(x + 4, legBase + 4 + legOffset, 3, 2)
+  ctx.fillRect(x + 9, legBase + 4 - legOffset, 3, 2)
+  // Shoe highlights
   ctx.fillStyle = '#2a2a3a'
-  ctx.fillRect(x + 4 * S, legBase + 8 * S + legOffset, 6 * S, 2 * S)
-  ctx.fillRect(x + 9 * S, legBase + 8 * S - legOffset, 6 * S, 2 * S)
+  ctx.fillRect(x + 4, legBase + 4 + legOffset, 3, 1)
+  ctx.fillRect(x + 9, legBase + 4 - legOffset, 3, 1)
 
-  // === BODY / OUTFIT (scaled) ===
+  // === BODY / OUTFIT ===
+  // Main body
   ctx.fillStyle = outfit
-  ctx.fillRect(x + 4 * S, y + 9 * S + bobY, 16 * S, 16 * S)
+  ctx.fillRect(x + 4, y + 9 + bobY, 8, 8)
+  // Outfit shading
   ctx.fillStyle = outfitDark
-  ctx.fillRect(x + 4 * S, y + 9 * S + bobY, 2 * S, 16 * S)
-  ctx.fillRect(x + 4 * S, y + 23 * S + bobY, 16 * S, 4 * S)
+  ctx.fillRect(x + 4, y + 9 + bobY, 1, 8) // left shadow
+  ctx.fillRect(x + 4, y + 15 + bobY, 8, 2) // bottom shadow
+  // Outfit highlight
   ctx.fillStyle = outfitLight
-  ctx.fillRect(x + 6 * S, y + 9 * S + bobY, 12 * S, 2 * S)
-  ctx.fillRect(x + 22 * S, y + 11 * S + bobY, 2 * S, 10 * S)
+  ctx.fillRect(x + 5, y + 9 + bobY, 6, 1) // top highlight
+  ctx.fillRect(x + 11, y + 10 + bobY, 1, 5) // right highlight
 
-  // Collar (scaled)
+  // Collar
   ctx.fillStyle = '#fff'
-  ctx.fillRect(x + 8 * S, y + 9 * S + bobY, 8 * S, 2 * S)
+  ctx.fillRect(x + 6, y + 9 + bobY, 4, 1)
 
-  // Belt (scaled)
+  // Belt
   ctx.fillStyle = '#3a3a3a'
-  ctx.fillRect(x + 4 * S, y + 24 * S + bobY, 16 * S, 2 * S)
+  ctx.fillRect(x + 4, y + 16 + bobY, 8, 1)
+  // Belt buckle
   ctx.fillStyle = '#8a8a4a'
-  ctx.fillRect(x + 14 * S, y + 24 * S + bobY, 4 * S, 2 * S)
+  ctx.fillRect(x + 7, y + 16 + bobY, 2, 1)
 
-  // === ARMS (scaled with new animations) ===
-  if (isPhone) {
-    // Right arm holding phone
+  // === ARMS ===
+  if (isSmoking) {
+    // Right arm forward with cigarette
     ctx.fillStyle = skin
-    ctx.fillRect(x + 4 * S, y + 11 * S + bobY, 4 * S, 10 * S)
-    ctx.fillRect(x + 2 * S, y + 11 * S + bobY, 4 * S, 4 * S)
-    // Phone
-    ctx.fillStyle = '#222'
-    ctx.fillRect(x + 2 * S, y + 9 * S + bobY, 4 * S, 4 * S)
-    ctx.fillStyle = '#48f'
-    ctx.fillRect(x + 3 * S, y + 10 * S + bobY, 2 * S, 2 * S)
-    // Left arm
-    ctx.fillStyle = skin
-    ctx.fillRect(x + 22 * S, y + 11 * S + bobY, 4 * S, 10 * S)
-  } else if (isEating) {
-    // Eating pose - arm to mouth
-    ctx.fillStyle = skin
-    ctx.fillRect(x + 4 * S, y + 11 * S + bobY, 4 * S, 6 * S)
-    ctx.fillRect(x + 2 * S, y + 13 * S + bobY, 6 * S, 4 * S)
-    // Food item
-    ctx.fillStyle = '#8a4'
-    ctx.fillRect(x + 6 * S, y + 12 * S + bobY, 4 * S, 4 * S)
-    // Left arm
-    ctx.fillStyle = skin
-    ctx.fillRect(x + 22 * S, y + 11 * S + bobY, 4 * S, 10 * S)
-  } else if (isWave) {
-    // Waving animation
-    const waveY = col % 2 === 0 ? -4 * S : -2 * S
-    ctx.fillStyle = skin
-    ctx.fillRect(x + 4 * S, y + 11 * S + bobY, 4 * S, 8 * S)
-    ctx.fillRect(x + 2 * S, y + 9 * S + bobY + waveY, 4 * S, 6 * S)
-    // Left arm down
-    ctx.fillStyle = skin
-    ctx.fillRect(x + 22 * S, y + 11 * S + bobY, 4 * S, 10 * S)
-  } else if (isDance) {
-    // Dancing arms
-    const danceY = col % 2 === 0 ? -4 * S : 2 * S
-    ctx.fillStyle = skin
-    ctx.fillRect(x + 2 * S, y + 9 * S + bobY + danceY, 4 * S, 10 * S)
-    ctx.fillRect(x + 24 * S, y + 11 * S + bobY - danceY, 4 * S, 10 * S)
-  } else if (isSmoking) {
-    ctx.fillStyle = skin
-    ctx.fillRect(x + 6 * S, y + 11 * S + bobY, 4 * S, 10 * S)
-    ctx.fillRect(x + 22 * S, y + 11 * S + bobY, 4 * S, 8 * S)
-    ctx.fillRect(x + 26 * S, y + 11 * S + bobY, 4 * S, 2 * S)
-    ctx.fillStyle = '#eee'
-    ctx.fillRect(x + 28 * S, y + 11 * S + bobY, 4 * S, 2 * S)
-    ctx.fillStyle = '#ff6633'
-    ctx.fillRect(x + 30 * S, y + 11 * S + bobY, 2 * S, 2 * S)
-  } else if (isPlaying) {
-    const armY = col % 2 === 0 ? 0 : -4 * S
-    ctx.fillStyle = skin
-    ctx.fillRect(x + 4 * S, y + 11 * S + bobY + armY, 4 * S, 10 * S)
-    ctx.fillRect(x + 24 * S, y + 11 * S + bobY - armY, 4 * S, 10 * S)
-  } else if (row === 5) {
-    ctx.fillStyle = outfit
-    ctx.fillRect(x + 4 * S, y + 11 * S + bobY, 4 * S, 8 * S)
-    ctx.fillRect(x + 24 * S, y + 11 * S + bobY, 4 * S, 8 * S)
-    ctx.fillStyle = skin
-    ctx.fillRect(x + 2 * S, y + 17 * S + bobY, 4 * S, 4 * S)
-    ctx.fillRect(x + 26 * S, y + 17 * S + bobY, 4 * S, 4 * S)
-  } else {
-    ctx.fillStyle = skin
-    ctx.fillRect(x + 6 * S, y + 11 * S + bobY, 4 * S, 10 * S + (armSwing > 0 ? 2 * S : 0))
-    ctx.fillRect(x + 22 * S, y + 11 * S + bobY, 4 * S, 10 * S + (armSwing < 0 ? 2 * S : 0))
+    ctx.fillRect(x + 3, y + 10 + bobY, 2, 5)
     ctx.fillStyle = skinDark
-    ctx.fillRect(x + 6 * S, y + 11 * S + bobY, 2 * S, 10 * S + (armSwing > 0 ? 2 * S : 0))
-    ctx.fillRect(x + 22 * S, y + 11 * S + bobY, 2 * S, 10 * S + (armSwing < 0 ? 2 * S : 0))
+    ctx.fillRect(x + 3, y + 10 + bobY, 1, 5)
+    // Left arm holding cigarette out
+    ctx.fillStyle = skin
+    ctx.fillRect(x + 11, y + 10 + bobY, 2, 4)
+    ctx.fillRect(x + 13, y + 10 + bobY, 2, 1) // extended hand
+    // Cigarette
+    ctx.fillStyle = '#eee'
+    ctx.fillRect(x + 14, y + 10 + bobY, 2, 1)
+    ctx.fillStyle = '#ff6633'
+    ctx.fillRect(x + 15, y + 10 + bobY, 1, 1) // lit end
+    // Smoke particles
+    if (col % 2 === 0) {
+      ctx.fillStyle = 'rgba(180,180,180,0.4)'
+      ctx.fillRect(x + 15, y + 8 + bobY, 1, 1)
+      ctx.fillRect(x + 14, y + 6 + bobY, 1, 1)
+    } else {
+      ctx.fillStyle = 'rgba(180,180,180,0.3)'
+      ctx.fillRect(x + 14, y + 7 + bobY, 1, 1)
+      ctx.fillRect(x + 15, y + 5 + bobY, 1, 1)
+      ctx.fillRect(x + 13, y + 4 + bobY, 1, 1)
+    }
+  } else if (isPlaying) {
+    // Playing animation - arms up/active
+    const armY = col % 2 === 0 ? 0 : -2
+    ctx.fillStyle = skin
+    ctx.fillRect(x + 2, y + 10 + bobY + armY, 2, 5)
+    ctx.fillRect(x + 12, y + 10 + bobY - armY, 2, 5)
+    ctx.fillStyle = skinDark
+    ctx.fillRect(x + 2, y + 10 + bobY + armY, 1, 5)
+    ctx.fillRect(x + 12, y + 10 + bobY - armY, 1, 5)
+  } else if (row === 5) {
+    // Action pose (working at desk) - arms at keyboard
+    ctx.fillStyle = outfit
+    ctx.fillRect(x + 2, y + 10 + bobY, 2, 4)
+    ctx.fillRect(x + 12, y + 10 + bobY, 2, 4)
+    ctx.fillStyle = skin
+    ctx.fillRect(x + 1, y + 13 + bobY, 2, 2) // left hand forward
+    ctx.fillRect(x + 13, y + 13 + bobY, 2, 2) // right hand forward
+  } else {
+    // Normal arms with swing
+    ctx.fillStyle = skin
+    ctx.fillRect(x + 3, y + 10 + bobY, 2, 5 + (armSwing > 0 ? 1 : 0))
+    ctx.fillRect(x + 11, y + 10 + bobY, 2, 5 + (armSwing < 0 ? 1 : 0))
+    // Arm shadows
+    ctx.fillStyle = skinDark
+    ctx.fillRect(x + 3, y + 10 + bobY, 1, 5 + (armSwing > 0 ? 1 : 0))
+    ctx.fillRect(x + 11, y + 10 + bobY, 1, 5 + (armSwing < 0 ? 1 : 0))
+    // Hands
+    ctx.fillStyle = skin
+    ctx.fillRect(x + 3, y + 14 + bobY + (armSwing > 0 ? 1 : 0), 2, 1)
+    ctx.fillRect(x + 11, y + 14 + bobY + (armSwing < 0 ? 1 : 0), 2, 1)
   }
 
-  // === HEAD (scaled) ===
+  // === HEAD ===
+  // Head shape (rounded)
   ctx.fillStyle = skin
-  ctx.fillRect(x + 10 * S, y + 4 * S + bobY, 12 * S, 14 * S)
-  ctx.fillRect(x + 8 * S, y + 6 * S + bobY, 16 * S, 10 * S)
+  ctx.fillRect(x + 5, y + 2 + bobY, 6, 7)
+  ctx.fillRect(x + 4, y + 3 + bobY, 8, 5) // wider middle
+  // Face shading
   ctx.fillStyle = skinDark
-  ctx.fillRect(x + 8 * S, y + 14 * S + bobY, 16 * S, 2 * S)
-  ctx.fillRect(x + 8 * S, y + 6 * S + bobY, 2 * S, 10 * S)
+  ctx.fillRect(x + 4, y + 7 + bobY, 8, 1) // chin shadow
+  ctx.fillRect(x + 4, y + 3 + bobY, 1, 5) // left face shadow
+  // Face highlight
   ctx.fillStyle = skinLight
-  ctx.fillRect(x + 12 * S, y + 6 * S + bobY, 6 * S, 2 * S)
+  ctx.fillRect(x + 6, y + 3 + bobY, 3, 1)
 
-  // Neck (scaled)
+  // Neck
   ctx.fillStyle = skinDark
-  ctx.fillRect(x + 12 * S, y + 16 * S + bobY, 8 * S, 4 * S)
+  ctx.fillRect(x + 6, y + 8 + bobY, 4, 2)
 
-  // === HAIR (scaled) ===
-  // (Hair drawing code would continue here with 2x scaling)
-  // For brevity, continuing with pattern...
+  // === HAIR ===
+  ctx.fillStyle = hair
+  const hs = traits.hairStyle % 8
+  switch (hs) {
+    case 0: // Short flat
+      ctx.fillRect(x + 4, y + 1 + bobY, 8, 3)
+      ctx.fillStyle = hairDark
+      ctx.fillRect(x + 4, y + 3 + bobY, 2, 1)
+      ctx.fillRect(x + 10, y + 3 + bobY, 2, 1)
+      break
+    case 1: // Spiky
+      ctx.fillRect(x + 5, y + bobY, 6, 3)
+      ctx.fillRect(x + 4, y + 1 + bobY, 2, 2)
+      ctx.fillRect(x + 10, y + 1 + bobY, 2, 2)
+      // Spikes
+      ctx.fillRect(x + 4, y - 1 + bobY, 1, 2)
+      ctx.fillRect(x + 7, y - 1 + bobY, 1, 2)
+      ctx.fillRect(x + 10, y - 1 + bobY, 1, 2)
+      ctx.fillStyle = hairDark
+      ctx.fillRect(x + 5, y + 2 + bobY, 6, 1)
+      break
+    case 2: // Side part
+      ctx.fillRect(x + 4, y + 1 + bobY, 8, 3)
+      ctx.fillRect(x + 3, y + 2 + bobY, 2, 5) // long left side
+      ctx.fillStyle = hairDark
+      ctx.fillRect(x + 3, y + 5 + bobY, 2, 2)
+      break
+    case 3: // Bald (very minimal)
+      ctx.fillRect(x + 5, y + 1 + bobY, 6, 2)
+      break
+    case 4: // Long hair
+      ctx.fillRect(x + 4, y + 1 + bobY, 8, 3)
+      ctx.fillRect(x + 3, y + 2 + bobY, 2, 7) // left side
+      ctx.fillRect(x + 11, y + 2 + bobY, 2, 7) // right side
+      ctx.fillStyle = hairDark
+      ctx.fillRect(x + 3, y + 6 + bobY, 2, 3)
+      ctx.fillRect(x + 11, y + 6 + bobY, 2, 3)
+      break
+    case 5: // Mohawk
+      ctx.fillRect(x + 6, y - 1 + bobY, 4, 4)
+      ctx.fillStyle = hairDark
+      ctx.fillRect(x + 6, y + 2 + bobY, 4, 1)
+      break
+    case 6: // Ponytail
+      ctx.fillRect(x + 4, y + 1 + bobY, 8, 3)
+      // Ponytail extending back
+      if (!facingBack) {
+        ctx.fillRect(x + 11, y + 2 + bobY, 2, 6)
+        ctx.fillRect(x + 12, y + 6 + bobY, 2, 3)
+      } else {
+        ctx.fillRect(x + 6, y + 2 + bobY, 4, 2)
+        ctx.fillRect(x + 7, y + 4 + bobY, 2, 5)
+      }
+      break
+    case 7: // Curly
+      ctx.fillRect(x + 4, y + bobY, 8, 4)
+      ctx.fillRect(x + 3, y + 1 + bobY, 1, 4)
+      ctx.fillRect(x + 12, y + 1 + bobY, 1, 4)
+      // Curl texture
+      ctx.fillStyle = hairDark
+      ctx.fillRect(x + 5, y + 1 + bobY, 1, 1)
+      ctx.fillRect(x + 7, y + bobY, 1, 1)
+      ctx.fillRect(x + 9, y + 1 + bobY, 1, 1)
+      ctx.fillRect(x + 11, y + bobY, 1, 1)
+      break
+  }
 
-  // === FACE DETAILS (scaled) ===
+  // === FACE DETAILS ===
   if (!facingBack) {
-    // Eyes (scaled)
+    // Eyes
     ctx.fillStyle = '#fff'
-    ctx.fillRect(x + 10 * S, y + 8 * S + bobY, 6 * S, 4 * S)
-    ctx.fillRect(x + 18 * S, y + 8 * S + bobY, 6 * S, 4 * S)
-    const eyeShiftX = row === 3 ? -2 * S : row === 4 ? 2 * S : 0
+    ctx.fillRect(x + 5, y + 4 + bobY, 3, 2)
+    ctx.fillRect(x + 9, y + 4 + bobY, 3, 2)
+    // Pupils (shift with direction)
+    const eyeShiftX = row === 3 ? -1 : row === 4 ? 1 : 0
     ctx.fillStyle = '#222'
-    ctx.fillRect(x + 12 * S + eyeShiftX, y + 8 * S + bobY, 4 * S, 4 * S)
-    ctx.fillRect(x + 20 * S + eyeShiftX, y + 8 * S + bobY, 4 * S, 4 * S)
+    ctx.fillRect(x + 6 + eyeShiftX, y + 4 + bobY, 2, 2)
+    ctx.fillRect(x + 10 + eyeShiftX, y + 4 + bobY, 2, 2)
+    // Pupil highlights
     ctx.fillStyle = '#fff'
-    ctx.fillRect(x + 12 * S + eyeShiftX, y + 8 * S + bobY, 2 * S, 2 * S)
-    ctx.fillRect(x + 20 * S + eyeShiftX, y + 8 * S + bobY, 2 * S, 2 * S)
+    ctx.fillRect(x + 6 + eyeShiftX, y + 4 + bobY, 1, 1)
+    ctx.fillRect(x + 10 + eyeShiftX, y + 4 + bobY, 1, 1)
 
-    // Mouth (scaled)
+    // Mouth
     if (isSmoking) {
       ctx.fillStyle = '#999'
-      ctx.fillRect(x + 14 * S, y + 14 * S + bobY, 6 * S, 2 * S)
-    } else if (isPlaying || isDance) {
+      ctx.fillRect(x + 7, y + 7 + bobY, 3, 1) // grimace
+    } else if (isPlaying) {
       ctx.fillStyle = '#cc7766'
-      ctx.fillRect(x + 14 * S, y + 14 * S + bobY, 4 * S, 2 * S)
+      ctx.fillRect(x + 7, y + 7 + bobY, 2, 1) // open mouth (excited)
+      ctx.fillStyle = '#aa5544'
+      ctx.fillRect(x + 7, y + 7 + bobY, 2, 1)
+    } else if (row === 5) {
+      // Working - neutral
+      ctx.fillStyle = '#bb8877'
+      ctx.fillRect(x + 7, y + 7 + bobY, 2, 1)
     } else {
+      // Slight smile
       ctx.fillStyle = '#cc8877'
-      ctx.fillRect(x + 14 * S, y + 14 * S + bobY, 6 * S, 2 * S)
+      ctx.fillRect(x + 7, y + 7 + bobY, 3, 1)
+    }
+
+    // Face accessories
+    const face = traits.faceStyle ?? 'default'
+    if (face === 'glasses' || face === 'both') {
+      ctx.fillStyle = '#444'
+      // Left lens frame
+      ctx.fillRect(x + 4, y + 4 + bobY, 4, 1)
+      ctx.fillRect(x + 4, y + 6 + bobY, 4, 1)
+      ctx.fillRect(x + 4, y + 4 + bobY, 1, 3)
+      ctx.fillRect(x + 7, y + 4 + bobY, 1, 3)
+      // Bridge
+      ctx.fillRect(x + 7, y + 5 + bobY, 2, 1)
+      // Right lens frame
+      ctx.fillRect(x + 8, y + 4 + bobY, 4, 1)
+      ctx.fillRect(x + 8, y + 6 + bobY, 4, 1)
+      ctx.fillRect(x + 8, y + 4 + bobY, 1, 3)
+      ctx.fillRect(x + 11, y + 4 + bobY, 1, 3)
+      // Lens shine
+      ctx.fillStyle = 'rgba(120,160,255,0.15)'
+      ctx.fillRect(x + 5, y + 5 + bobY, 2, 1)
+      ctx.fillRect(x + 9, y + 5 + bobY, 2, 1)
+    }
+    if (face === 'beard' || face === 'both') {
+      ctx.fillStyle = hair
+      ctx.fillRect(x + 5, y + 7 + bobY, 6, 2)
+      ctx.fillRect(x + 6, y + 8 + bobY, 4, 1)
+      ctx.fillStyle = hairDark
+      ctx.fillRect(x + 6, y + 8 + bobY, 4, 1)
+    }
+    if (face === 'freckles') {
+      ctx.fillStyle = darkenCSS(skin, 30)
+      ctx.fillRect(x + 5, y + 6 + bobY, 1, 1)
+      ctx.fillRect(x + 7, y + 5 + bobY, 1, 1)
+      ctx.fillRect(x + 10, y + 6 + bobY, 1, 1)
+    }
+    if (face === 'scar') {
+      ctx.fillStyle = skinLight
+      ctx.fillRect(x + 10, y + 4 + bobY, 1, 3)
+      ctx.fillStyle = skinDark
+      ctx.fillRect(x + 11, y + 4 + bobY, 1, 3)
     }
   }
 
-  // === HAT (scaled) ===
-  // (Hat drawing code would continue with 2x scaling)
+  // === HAT ===
+  const hat = traits.hatStyle ?? 'none'
+  if (hat !== 'none') {
+    const hatColor = toCSS(traits.accessoryColor ?? traits.hairColor)
+    const hatDark = toCSS(darken(traits.accessoryColor ?? traits.hairColor, 25))
+    ctx.fillStyle = hatColor
+    switch (hat) {
+      case 'cap':
+        ctx.fillRect(x + 3, y + bobY, 10, 3)
+        ctx.fillRect(x + 2, y + 2 + bobY, 3, 2) // brim
+        ctx.fillStyle = hatDark
+        ctx.fillRect(x + 3, y + 2 + bobY, 10, 1)
+        break
+      case 'beanie':
+        ctx.fillRect(x + 4, y - 1 + bobY, 8, 4)
+        ctx.fillRect(x + 6, y - 2 + bobY, 4, 2) // top pom
+        ctx.fillStyle = hatDark
+        ctx.fillRect(x + 4, y + 2 + bobY, 8, 1) // rim
+        break
+      case 'tophat':
+        ctx.fillRect(x + 5, y - 3 + bobY, 6, 5)
+        ctx.fillRect(x + 3, y + 1 + bobY, 10, 2) // brim
+        ctx.fillStyle = hatDark
+        ctx.fillRect(x + 5, y + bobY, 6, 1) // band
+        break
+      case 'headband':
+        ctx.fillRect(x + 4, y + 1 + bobY, 8, 2)
+        break
+      case 'bandana':
+        ctx.fillRect(x + 4, y + bobY, 8, 3)
+        ctx.fillRect(x + 11, y + 2 + bobY, 3, 2) // tail
+        ctx.fillStyle = hatDark
+        ctx.fillRect(x + 4, y + 2 + bobY, 8, 1)
+        break
+    }
+  }
 }
 
 function toCSS(color: number): string {
