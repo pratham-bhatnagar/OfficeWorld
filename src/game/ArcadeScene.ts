@@ -2,7 +2,7 @@ import Phaser from 'phaser'
 import { AgentState, TileData } from '../types'
 import { BREAK_TIMING, POLECAT_SPAWN_INTERVAL } from '../constants'
 import { WorldBuilder } from './world/WorldBuilder'
-import { DynamicRoomGenerator, RigInfo } from './world/DynamicRoomGenerator'
+import { ROOMS } from './world/RoomDefinitions'
 import { CameraController } from './CameraController'
 import { CharacterSprite } from './sprites/CharacterSprite'
 import { generateSpritesheet, traitsFromName } from './sprites/SpriteGenerator'
@@ -10,74 +10,26 @@ import { findPath } from './world/Pathfinding'
 import { BeadSystem } from './systems/BeadSystem'
 import { PolecatSystem } from './systems/PolecatSystem'
 
-// Dynamic rig configuration - can be updated at runtime
-let DYNAMIC_RIGS: RigInfo[] = [
-  { id: 'planogram', name: 'Planogram', crewCount: 6 },
-  { id: 'alc_ai', name: 'ALC AI', crewCount: 4 },
-  { id: 'arcade', name: 'Arcade', crewCount: 2 },
+const DEFAULT_AGENTS: AgentState[] = [
+  // Planogram rig
+  { id: 'vap-witness', name: 'witness', role: 'witness', rig: 'planogram', status: 'working', position: { x: 5, y: 7 }, currentRoom: 'planogram' },
+  { id: 'vap-refinery', name: 'refinery', role: 'refinery', rig: 'planogram', status: 'working', position: { x: 5, y: 12 }, currentRoom: 'planogram' },
+  { id: 'vap-manager', name: 'manager', role: 'manager', rig: 'planogram', status: 'working', position: { x: 16, y: 7 }, currentRoom: 'planogram' },
+  { id: 'vap-frontend', name: 'frontend', role: 'worker', rig: 'planogram', status: 'working', position: { x: 16, y: 12 }, currentRoom: 'planogram' },
+  { id: 'vap-backend', name: 'backend', role: 'worker', rig: 'planogram', status: 'idle', position: { x: 5, y: 17 }, currentRoom: 'planogram' },
+  { id: 'vap-ml', name: 'ml', role: 'worker', rig: 'planogram', status: 'idle', position: { x: 16, y: 17 }, currentRoom: 'planogram' },
+  // ALC AI rig
+  { id: 'alc-witness', name: 'witness', role: 'witness', rig: 'alc_ai', status: 'working', position: { x: 45, y: 7 }, currentRoom: 'alc_ai' },
+  { id: 'alc-refinery', name: 'refinery', role: 'refinery', rig: 'alc_ai', status: 'working', position: { x: 45, y: 12 }, currentRoom: 'alc_ai' },
+  { id: 'alc-manager', name: 'manager', role: 'manager', rig: 'alc_ai', status: 'idle', position: { x: 56, y: 7 }, currentRoom: 'alc_ai' },
+  { id: 'alc-backend', name: 'backend', role: 'worker', rig: 'alc_ai', status: 'working', position: { x: 56, y: 12 }, currentRoom: 'alc_ai' },
+  // Arcade rig
+  { id: 'arc-witness', name: 'witness', role: 'witness', rig: 'arcade', status: 'working', position: { x: 75, y: 7 }, currentRoom: 'arcade_dept' },
+  { id: 'arc-game', name: 'game', role: 'worker', rig: 'arcade', status: 'working', position: { x: 75, y: 12 }, currentRoom: 'arcade_dept' },
+  // Special agents
+  { id: 'mayor', name: 'MAYOR', role: 'mayor', rig: 'mayor', status: 'working', position: { x: 35, y: 7 }, currentRoom: 'mayor_office' },
+  { id: 'deacon', name: 'deacon', role: 'deacon', rig: 'deacon', status: 'idle', position: { x: 35, y: 20 }, currentRoom: 'hallway' },
 ]
-
-// Generate dynamic world layout
-function generateDynamicWorld() {
-  const generator = new DynamicRoomGenerator(DYNAMIC_RIGS)
-  return generator.generate()
-}
-
-// Generate agents from dynamic world
-function generateAgentsFromWorld(world: ReturnType<typeof generateDynamicWorld>): AgentState[] {
-  const agents: AgentState[] = []
-  
-  // Add mayor
-  const mayorSpawn = world.agentSpawnPoints.find((p) => p.roomId === 'mayor-office')
-  if (mayorSpawn) {
-    agents.push({
-      id: 'mayor',
-      name: 'MAYOR',
-      role: 'mayor',
-      rig: 'mayor',
-      status: 'working',
-      position: { x: mayorSpawn.x, y: mayorSpawn.y },
-      currentRoom: 'mayor-office',
-    })
-  }
-  
-  // Add agents for each rig
-  let agentId = 0
-  DYNAMIC_RIGS.forEach((rig) => {
-    const roomSpawns = world.agentSpawnPoints.filter((p) => p.roomId === `dept-${rig.id}`)
-    const roles = ['witness', 'refinery', 'manager', 'worker', 'worker', 'worker']
-    
-    roomSpawns.forEach((spawn, idx) => {
-      if (idx < rig.crewCount) {
-        agents.push({
-          id: `${rig.id}-${roles[idx] || 'worker'}-${idx}`,
-          name: `${roles[idx] || 'worker'}`,
-          role: roles[idx] || 'worker',
-          rig: rig.id,
-          status: idx < 2 ? 'working' : 'idle',
-          position: { x: spawn.x, y: spawn.y },
-          currentRoom: `dept-${rig.id}`,
-        })
-      }
-    })
-  })
-  
-  return agents
-}
-
-// Initial agent generation
-let CURRENT_AGENTS: AgentState[] = []
-
-export function updateRigs(newRigs: RigInfo[]) {
-  DYNAMIC_RIGS = newRigs
-  const world = generateDynamicWorld()
-  CURRENT_AGENTS = generateAgentsFromWorld(world)
-  return { world, agents: CURRENT_AGENTS }
-}
-
-// Initialize on module load
-const initialWorld = generateDynamicWorld()
-CURRENT_AGENTS = generateAgentsFromWorld(initialWorld)
 
 export class ArcadeScene extends Phaser.Scene {
   private cameraController!: CameraController
@@ -99,21 +51,17 @@ export class ArcadeScene extends Phaser.Scene {
   }
 
   create() {
-    // Generate dynamic world layout
-    const world = generateDynamicWorld()
-    
-    const builder = new WorldBuilder(this, world.rooms, world.tileMap)
+    const builder = new WorldBuilder(this)
     const { grid } = builder.buildWorld()
     this.grid = grid
 
-    this.cameraController = new CameraController(this, world.width, world.height)
+    this.cameraController = new CameraController(this)
 
     // Initialize systems
     this.beadSystem = new BeadSystem(this)
     this.polecatSystem = new PolecatSystem(this, grid, this.beadSystem)
 
-    // Use dynamically generated agents
-    for (const agent of CURRENT_AGENTS) {
+    for (const agent of DEFAULT_AGENTS) {
       this.agentStates.set(agent.id, { ...agent })
       this.createCharacter(agent)
 
