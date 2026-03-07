@@ -106,3 +106,27 @@ export interface PolecatState {
   path: { x: number; y: number }[]
   pathIndex: number
 }
+
+// Dynamic room generation types
+export type RoomType = 'department' | 'shared' | 'hallway' | 'breakroom' | 'smoke_area' | 'bathroom' | 'play_area' | 'meeting_room' | 'mayor_office' | 'meeting' | 'smoke' | 'play' | 'mayor'
+
+export interface Room {
+  id: string
+  type: RoomType
+  x: number
+  y: number
+  width: number
+  height: number
+  name: string
+  color: number
+  connections?: string[] // Room IDs this room connects to
+  doors?: { x: number; y: number }[]
+  furniture?: FurnitureItem[]
+  deskPositions?: { x: number; y: number }[]
+}
+
+export interface TileMap {
+  tiles: number[][]
+  width: number
+  height: number
+}

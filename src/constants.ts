@@ -22,6 +22,8 @@ export const THEME = {
   orange: '#ffaa00',
   cyan: '#53d8fb',
   purple: '#64477d',
+  blue: '#7eb8da',
+  pink: '#e8b4b8',
 
   // Text
   textBright: '#fff',

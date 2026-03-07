@@ -151,7 +151,7 @@ function ControlPanel({ activeRig, onRigSelect, onTerminalToggle, onMayorChat }:
 
         {/* Hints */}
         <div style={{ marginTop: 'auto', fontSize: 9, color: THEME.textMuted, lineHeight: 1.6 }}>
-          Drag=pan | Scroll=zoom | Click=select | ~=term | M=mayor | Esc=close
+          Drag=pan | Scroll=zoom | Click=select | ~=term | M=mayor | L=activity | Esc=close
         </div>
       </div>
     </div>

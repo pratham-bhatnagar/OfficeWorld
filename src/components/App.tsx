@@ -5,6 +5,7 @@ import { StatusHUD } from './StatusHUD'
 import { BottomPanels } from './BottomPanels'
 import { TerminalPanel } from './TerminalPanel'
 import { SessionViewer, agentToSession } from './SessionViewer'
+import { ActivityLogPanel } from './ActivityLogPanel'
 import { CANVAS_WIDTH, CANVAS_HEIGHT, TILE_SIZE, THEME } from '../constants'
 import { AgentState } from '../types'
 
@@ -19,6 +20,7 @@ export function App() {
   const [activeRig, setActiveRig] = useState('planogram')
   const [beadCount, setBeadCount] = useState(0)
   const [polecatCount, setPolecatCount] = useState(0)
+  const [activityLogOpen, setActivityLogOpen] = useState(false)
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -34,8 +36,13 @@ export function App() {
         e.preventDefault()
         openMayorSession()
       }
+      if (e.key === 'l' || e.key === 'L') {
+        e.preventDefault()
+        setActivityLogOpen((prev) => !prev)
+      }
       if (e.key === 'Escape') {
         setSessionViewerOpen(false)
+        setActivityLogOpen(false)
       }
     }
     window.addEventListener('keydown', handleKey)
@@ -174,6 +181,7 @@ export function App() {
         sessionName={sessionName}
         title={sessionTitle}
       />
+      <ActivityLogPanel visible={activityLogOpen} onClose={() => setActivityLogOpen(false)} />
     </div>
   )
 }
