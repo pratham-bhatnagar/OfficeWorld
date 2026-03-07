@@ -143,7 +143,8 @@ export function SessionViewer({ visible, onClose, sessionName, title }: SessionV
   }, [msgInput, sending, sessionName])
 
   // Send terminal input via WebSocket
-  const sendTerminalInput = useCallback((input: string) => {
+  // @ts-ignore - unused for now but kept for future use
+  const _sendTerminalInput = useCallback((input: string) => {
     if (wsRef.current?.readyState === WebSocket.OPEN && sessionName) {
       wsRef.current.send(JSON.stringify({
         type: 'terminal-input',
