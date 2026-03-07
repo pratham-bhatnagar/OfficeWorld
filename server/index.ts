@@ -2,6 +2,7 @@ import express from 'express'
 import { WebSocketServer, WebSocket } from 'ws'
 import http from 'http'
 import { exec, execFile } from 'child_process'
+import puppeteer, { Browser } from 'puppeteer'
 
 const app = express()
 const server = http.createServer(app)
@@ -378,6 +379,91 @@ app.get('/api/mayor-chat/history', async (_req, res) => {
   }
 })
 
+// --- REST endpoints: screenshot ---
+
+let browser: Browser | null = null
+
+async function getBrowser(): Promise<Browser> {
+  if (!browser) {
+    browser = await puppeteer.launch({
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+    })
+  }
+  return browser
+}
+
+// Cleanup browser on exit
+process.on('exit', () => {
+  browser?.close()
+})
+
+app.get('/api/screenshot', async (req, res) => {
+  const width = Number(req.query.width) || 1280
+  const height = Number(req.query.height) || 720
+  const waitFor = Number(req.query.wait) || 3000 // ms to wait for game render
+
+  try {
+    const browserInstance = await getBrowser()
+    const page = await browserInstance.newPage()
+
+    // Set viewport
+    await page.setViewport({ width, height })
+
+    // Navigate to the game (local dev server or built version)
+    const gameUrl = process.env.GAME_URL || 'http://localhost:3200'
+    await page.goto(gameUrl, { waitUntil: 'networkidle0' })
+
+    // Wait for Phaser canvas to be ready
+    await page.waitForFunction(
+      () => {
+        const canvas = document.querySelector('canvas')
+        return canvas && canvas.width > 0 && canvas.height > 0
+      },
+      { timeout: waitFor }
+    )
+
+    // Additional wait for game initialization
+    await new Promise((resolve) => setTimeout(resolve, 500))
+
+    // Capture the canvas
+    const canvasElement = await page.$('canvas')
+    if (!canvasElement) {
+      await page.close()
+      res.status(500).json({ ok: false, error: 'Game canvas not found' })
+      return
+    }
+
+    // Get screenshot as buffer
+    const screenshot = await canvasElement.screenshot({
+      type: 'png',
+      encoding: 'binary',
+    })
+
+    await page.close()
+
+    // Return PNG
+    res.setHeader('Content-Type', 'image/png')
+    res.setHeader('Content-Disposition', 'attachment; filename="screenshot.png"')
+    res.send(screenshot)
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Screenshot failed'
+    res.status(500).json({ ok: false, error: message })
+  }
+})
+
+// Health check for screenshot capability
+app.get('/api/screenshot/health', async (_req, res) => {
+  try {
+    const browserInstance = await getBrowser()
+    const version = await browserInstance.version()
+    res.json({ ok: true, browser: version })
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Browser not available'
+    res.status(500).json({ ok: false, error: message })
+  }
+})
+
 // --- WebSocket ---
 
 interface WsClient extends WebSocket {
@@ -386,9 +472,9 @@ interface WsClient extends WebSocket {
 
 function broadcast(data: Record<string, unknown>) {
   const msg = JSON.stringify(data)
-  for (const client of wss.clients) {
+  Array.from(wss.clients).forEach((client) => {
     if (client.readyState === WebSocket.OPEN) client.send(msg)
-  }
+  })
 }
 
 const POLL_ENDPOINTS = [
